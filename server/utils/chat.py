@@ -21,13 +21,16 @@ def make_prompt(question, search_result, messages):
     You are a helpful assistant that can answer questions and help with tasks.
     You are given a question, a search result, and a conversation history.
     Use the search result to answer the question.
+    answer concisely and in Korean.
     Question:
     {question}
     Search result:
-    {search_result}
-    Conversation history:
-    {messages}
-    answer in Korean."""
+    {search_result}"""
+    if messages:
+        prompt += f"""
+        Conversation history:
+        {messages}
+        answer in Korean."""
     return prompt
 
 def chat_with_solar(question, search_result, messages):
@@ -38,6 +41,16 @@ def chat_with_solar(question, search_result, messages):
     )
     return response.choices[0].message.content
  
+def RAG_chat(question, vectorstore, messages = [], use_history=False):
+    search_result = vectorstore.similarity_search(question, k=1)
+    response = chat_with_solar(question, search_result, messages)
+    if use_history:
+        if messages:
+            messages.append({"role": "user", "content": question})
+            messages.append({"role": "assistant", "content": response})
+        else:
+            messages = [{"role": "user", "content": question}, {"role": "assistant", "content": response}]
+    return response
 
 if __name__ == "__main__":
 
@@ -74,22 +87,19 @@ if __name__ == "__main__":
     # First turn
     history = []
     question = "과학 장학금 신청 마감일은 언제인가요?"
-    search_result = vectorstore.similarity_search(question, k=1)
-    response = chat_with_solar(question, search_result, history)
+    response = RAG_chat(question, vectorstore, history, use_history=True)
     print("Assistant:", response)
-    history.append({"role": "user", "content": question})
-    history.append({"role": "assistant", "content": response})
+    # history.append({"role": "user", "content": question})
+    # history.append({"role": "assistant", "content": response})
 
     # Second turn
     question = "우수 학생을 위한 특별 장학금 지원 자격은 무엇인가요?"
-    search_result = vectorstore.similarity_search(question, k=1)
-    response = chat_with_solar(question, search_result, history)
+    response = RAG_chat(question, vectorstore, history, use_history=True)
     print("Assistant:", response)
-    history.append({"role": "user", "content": question})
-    history.append({"role": "assistant", "content": response})
+    # history.append({"role": "user", "content": question})
+    # history.append({"role": "assistant", "content": response})
 
     # Third turn
     question = "해외 유학 장학금 신청 마감일은 언제인가요?"
-    search_result = vectorstore.similarity_search(question, k=1)
-    response = chat_with_solar(question, search_result, history)
+    response = RAG_chat(question, vectorstore, history, use_history=True)
     print("Assistant:", response)
