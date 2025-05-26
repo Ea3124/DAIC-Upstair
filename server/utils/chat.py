@@ -3,6 +3,7 @@ from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain_upstage import UpstageEmbeddings
 import faiss
 from langchain_community.docstore.in_memory import InMemoryDocstore
+from typing import List, Dict, Any, Optional
 
 
 from openai import OpenAI # openai==1.52.2
@@ -16,16 +17,19 @@ client = OpenAI(
 )
 dim_size = 4096
 
-def make_prompt(question, search_result, messages):
+def make_prompt(question: str, search_result: List[str], messages: List[Dict[str, str]]) -> str:
     prompt = f"""
     You are a helpful assistant that can answer questions and help with tasks.
     You are given a question, a search result, and a conversation history.
     Use the search result to answer the question.
     answer concisely and in Korean.
     Question:
-    {question}
-    Search result:
-    {search_result}"""
+    {question}"""
+    if search_result:
+        for i, result in enumerate(search_result):
+            prompt += f"""
+            Search result {i+1}:
+            {result}"""
     if messages:
         prompt += f"""
         Conversation history:
@@ -33,7 +37,15 @@ def make_prompt(question, search_result, messages):
         answer in Korean."""
     return prompt
 
-def chat_with_solar(question, search_result, messages):
+def chat_with_solar(question: str, search_result: List[str], messages: List[Dict[str, str]]) -> str:
+    """
+    args:
+        question: 질문(str)
+        search_result: 검색 결과(str)
+        messages: 대화 기록(list)
+    returns: 
+        response: 응답(str)
+    """
     prompt = make_prompt(question, search_result, messages)
     response = client.chat.completions.create(
         model="solar-pro",
@@ -41,8 +53,18 @@ def chat_with_solar(question, search_result, messages):
     )
     return response.choices[0].message.content
  
-def RAG_chat(question, vectorstore, messages = [], use_history=False):
-    search_result = vectorstore.similarity_search(question, k=1)
+def RAG_chat(question: str, vectorstore: FAISS, top_k: int = 3, messages: Optional[List[Dict[str, str]]] = [], use_history: bool = False) -> str:
+    """
+    args:
+        question: 질문(str)
+        vectorstore: 벡터 저장소(FAISS)
+        top_k: 검색 결과 개수(int)
+        messages: 대화 기록(list)
+        use_history: 대화 기록 사용 여부(bool)
+    returns: 
+        response: 응답(str)
+    """
+    search_result = vectorstore.similarity_search(question, k=top_k)
     response = chat_with_solar(question, search_result, messages)
     if use_history:
         if messages:
@@ -64,7 +86,8 @@ if __name__ == "__main__":
         embedding_function=query_embeddings,
         index=faiss.IndexFlatL2(dim_size),
         docstore=InMemoryDocstore(),
-        index_to_docstore_id={}
+        index_to_docstore_id={},
+        distance_strategy=DistanceStrategy.COSINE
     )
 
     vectorstore.add_texts(
