@@ -1,5 +1,7 @@
 package com.example.upstair_dev.home
 
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -56,6 +58,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.upstair_dev.R
+import com.example.upstair_dev.mypage.MyPageActivity
+import com.example.upstair_dev.noti.NotiActivity
 
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,6 +73,7 @@ class HomeActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen() {
+    val context = LocalContext.current
     var showFilter by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -79,7 +84,10 @@ fun HomeScreen() {
                     containerColor = Color(0xFF1D3A8A)
                 ),
                 actions = {
-                    IconButton(onClick = { /* 알림 클릭 */ }) {
+                    IconButton(onClick = {
+                        val intent = Intent(context, NotiActivity::class.java)
+                        context.startActivity(intent)
+                    }) {
                         BadgedBox(badge = { Badge { Text("3") } }) {
                             Icon(
                                 Icons.Default.Notifications,
@@ -88,7 +96,10 @@ fun HomeScreen() {
                             )
                         }
                     }
-                    IconButton(onClick = { /* 마이페이지 이동 */ }) {
+                    IconButton(onClick = {
+                        val intent = Intent(context, MyPageActivity::class.java)
+                        context.startActivity(intent)
+                    }) {
                         Icon(
                             Icons.Default.Person,
                             contentDescription = "Profile",
@@ -128,7 +139,10 @@ fun HomeScreen() {
                     value = searchText,
                     onValueChange = { searchText = it },
                     placeholder = { Text("장학금을 검색해보세요...") },
-                    colors = androidx.compose.material3.TextFieldDefaults.textFieldColors(containerColor = Color.Transparent),
+                    colors = androidx.compose.material3.TextFieldDefaults.colors(
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent
+                    ),
                     modifier = Modifier
                         .weight(1f)
                         .padding(end = 8.dp)
@@ -201,7 +215,7 @@ fun HomeScreen() {
                                     expanded = statusExpanded,
                                     onDismissRequest = { statusExpanded = false }
                                 ) {
-                                    listOf("재학생", "휴학생", "졸업생").forEach {
+                                    listOf("재학생", "휴학생").forEach {
                                         DropdownMenuItem(text = { Text(it) }, onClick = {
                                             selectedStatus = it
                                             statusExpanded = false
