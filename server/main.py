@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes.auth import login_router
 from routes.user import user_router
 from routes.docs import doc_router
+from simple_fastapi_auth import scholarship_router
 from db.db import init_db
 
 app = FastAPI()
@@ -24,3 +25,4 @@ init_db()  # 앱 시작 시 DB 테이블 생성
 app.include_router(login_router)
 app.include_router(user_router)
 app.include_router(doc_router)
+app.include_router(scholarship_router)
