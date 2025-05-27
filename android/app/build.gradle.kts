@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.upstair_dev"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -40,6 +40,8 @@ android {
 }
 
 dependencies {
+
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
 
 
     implementation(libs.androidx.core.ktx)

@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,6 +57,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,6 +77,8 @@ class HomeActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen() {
+    val viewModel: HomeViewModel = viewModel()
+    val scholarships by viewModel.scholarships
     val context = LocalContext.current
     var showFilter by remember { mutableStateOf(false) }
 
@@ -243,7 +247,7 @@ fun HomeScreen() {
 
             // 장학금 리스트
             LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
-                items(sampleScholarships) { scholarship ->
+                items(scholarships) { scholarship ->
                     ScholarshipCard(scholarship)
                 }
             }
@@ -371,22 +375,16 @@ fun HomeScreen() {
     }
 }
 
-data class Scholarship(val name: String, val deadline: String, val status: String)
-
-val sampleScholarships = listOf(
-    Scholarship("국가우수장학금", "2024-03-15", "모집중"),
-    Scholarship("성적우수장학금", "2024-04-01", "모집전"),
-    Scholarship("저소득층지원장학금", "2024-03-20", "모집중"),
-    Scholarship("지역인재장학금", "2024-02-28", "모집완료"),
-    Scholarship("창업지원장학금", "2024-03-25", "모집중")
-)
-
 @Composable
 fun ScholarshipCard(scholarship: Scholarship) {
+
+    val context = LocalContext.current
+
     val statusColor = when (scholarship.status) {
         "모집중" -> Color(0xFFD0F5D8)
         "모집전" -> Color(0xFFFFF2CC)
-        else -> Color(0xFFE0E0E0)
+        "모집완료" -> Color(0xFFE0E0E0)
+        else -> Color.LightGray
     }
 
     Card(
@@ -394,7 +392,13 @@ fun ScholarshipCard(scholarship: Scholarship) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
-            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp)),
+            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
+            .clickable {
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    data = android.net.Uri.parse(scholarship.link)
+                }
+                context.startActivity(intent)
+            },
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -404,9 +408,13 @@ fun ScholarshipCard(scholarship: Scholarship) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    scholarship.name,
+                    text = scholarship.name,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1D3A8A) // 남색
+                    fontSize = 14.sp,
+                    color = Color(0xFF1D3A8A),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
                 Box(
                     modifier = Modifier
