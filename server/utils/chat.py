@@ -51,7 +51,7 @@ def chat_with_solar(question: str, search_result: List[str], messages: List[Dict
         model="solar-pro",
         messages=[{"role": "user", "content": prompt}]
     )
-    return response.choices[0].message.content
+    return response
  
 def RAG_chat(question: str, vectorstore: FAISS, top_k: int = 3, messages: Optional[List[Dict[str, str]]] = [], use_history: bool = False) -> str:
     """
@@ -65,7 +65,6 @@ def RAG_chat(question: str, vectorstore: FAISS, top_k: int = 3, messages: Option
         response: 응답(str)
     """
     search_result = vectorstore.similarity_search(question, k=top_k)
-    print(search_result[0].metadata)
     response = chat_with_solar(question, search_result, messages)
     if use_history:
         if messages:
@@ -75,24 +74,8 @@ def RAG_chat(question: str, vectorstore: FAISS, top_k: int = 3, messages: Option
             messages = [{"role": "user", "content": question}, {"role": "assistant", "content": response}]
     return response
 
-if __name__ == "__main__":
-
-    # 쿼리 전용 임베딩 모델
-    query_embeddings = UpstageEmbeddings(model="solar-embedding-1-large-query")
-
-    # 문장 전용 임베딩 모델
-    passage_embeddings = UpstageEmbeddings(model="solar-embedding-1-large-passage")
-
-    vectorstore = FAISS(
-        embedding_function=query_embeddings,
-        index=faiss.IndexFlatL2(dim_size),
-        docstore=InMemoryDocstore(),
-        index_to_docstore_id={},
-        distance_strategy=DistanceStrategy.COSINE
-    )
-
-    vectorstore.add_texts(
-        # 장학금 관련 예시 문장들
+def make_vectorstore(texts: Optional[List[str]] = None, metadatas: Optional[List[Dict[str, str]]] = None):
+    if texts is None:
         texts=[
             "2023년 봄학기 장학금 신청이 시작되었습니다. 신청 마감일은 3월 15일입니다.",
             "우수 학생을 위한 특별 장학금 프로그램이 개설되었습니다. 지원 자격은 GPA 3.5 이상입니다.",
@@ -104,8 +87,8 @@ if __name__ == "__main__":
             "여름학기 장학금 신청이 가능합니다. 지원 마감일은 7월 15일입니다.",
             "장애 학생을 위한 특별 장학금이 마련되었습니다. 자세한 사항은 학생 지원 센터에 문의하세요.",
             "지역 사회 봉사 활동을 위한 장학금이 있습니다. 신청 마감일은 8월 20일입니다."
-        ],
-        embedding=passage_embeddings,
+        ]
+    if metadatas is None:
         metadatas=[
             {"source": "1"},
             {"source": "2"},
@@ -118,7 +101,23 @@ if __name__ == "__main__":
             {"source": "9"},
             {"source": "10"},
         ]
+    query_embeddings = UpstageEmbeddings(model="solar-embedding-1-large-query")
+    passage_embeddings = UpstageEmbeddings(model="solar-embedding-1-large-passage")
+    vectorstore = FAISS(
+        embedding_function=query_embeddings,
+        index=faiss.IndexFlatL2(dim_size),
+        docstore=InMemoryDocstore(),
+        index_to_docstore_id={},
+        distance_strategy=DistanceStrategy.COSINE
     )
+    vectorstore.add_texts(texts, embedding=passage_embeddings, metadatas=metadatas)
+    return vectorstore
+
+if __name__ == "__main__":
+
+
+
+    vectorstore = make_vectorstore()
 
     # First turn
     history = []

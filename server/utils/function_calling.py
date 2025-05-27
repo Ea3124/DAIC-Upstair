@@ -3,6 +3,8 @@ import json
 from dotenv import load_dotenv
 import os
 load_dotenv()
+from chat import RAG_chat, make_vectorstore
+from langchain_community.vectorstores import FAISS
 
 api_key = os.getenv("UPSTAGE_API_KEY")
 
@@ -11,25 +13,24 @@ client = OpenAI(
     base_url="https://api.upstage.ai/v1"
 )
  
-# Step 1: Setup and define the function
-# This is an example dummy function hard coded to return the same weather
-# In production, this could be your backend API or an external API
+# 쿼리 함수 예시    
 def print_gpa(gpa: float):
     scholarship = "없음"
     if gpa == None:
         gpa = 0
-    elif gpa >3.5:
+    elif gpa >=3.5:
         scholarship = "부산 장학금"
-    elif gpa >3.0:
+    elif gpa >=3.0:
         scholarship = "부산대 장학금"
-    elif gpa >2.5:
+    elif gpa >=2.5:
         scholarship = "금정구 장학금"
-    elif gpa >2.0:
+    elif gpa >=2.0:
         scholarship = "학교 장학금"
     else:
         scholarship = "없다"
     return scholarship
- 
+
+# 쿼리 함수2 예시
 def print_location(location: str):
     if location == None:
         location = "Unknown"
@@ -41,12 +42,15 @@ def print_location(location: str):
         location = "부산대학교"
     return location
 
+def ask_llm(question: str, vectorstore: FAISS):
+    return RAG_chat(question, vectorstore, top_k=1)
+
 # Step 2: Send the query and available functions to the model
-def run_conversation():
+def run_conversation(question: str, vectorstore: FAISS = None):
     messages = [
         {
             "role": "user",
-            "content": "금정구 거주자가 GPA 3.5 이상으로 받을 수 있는 장학금이 뭐야?",
+            "content": question,
         }
     ]
  
@@ -85,6 +89,27 @@ def run_conversation():
                 },
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "ask_llm",
+                "description": "벡터 저장소에 저장된 데이터를 참고하여 질문에 대한 답변을 생성하는 쿼리 내장 함수",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "question": {
+                            "type": "string",
+                            "description": "질문",
+                        },
+                        "vectorstore": {
+                            "type": "object",
+                            "description": "벡터 저장소",
+                        },
+                    },
+                    "required": ["question", "vectorstore"],
+                },
+            },
+        }
     ]
  
     # Step 3: Check if the model has requested a function call
@@ -104,6 +129,7 @@ def run_conversation():
         available_functions = {
             "print_gpa": print_gpa,
             "print_location": print_location,
+            "ask_llm": ask_llm,
         }  # You can define multiple functions here as needed
         messages.append(response_message)  # Add the assistant's reply to the conversation history
  
@@ -121,6 +147,12 @@ def run_conversation():
                 function_response = function_to_call(
                     location=function_args.get("location")
                 )
+            elif function_name == "ask_llm":
+                function_response = function_to_call(
+                    question=function_args.get("question"),
+                    vectorstore=vectorstore
+                )
+                return function_response
             messages.append(
                 {
                     "tool_call_id": tool_call.id,
@@ -137,5 +169,9 @@ def run_conversation():
         )
         return second_response  # Return the final response from the model
  
-response = run_conversation()
-print(response.choices[0].message.content)
+if __name__ == "__main__":
+    vectorstore = make_vectorstore()
+    #question = "GPA 3.9 이상인 학생은 어떤 장학금을 받을 수 있나요?"
+    question = "예술 전공 학생은 장학금을 어떻게 받을 수 있나요?"
+    response = run_conversation(question, vectorstore)
+    print(response.choices[0].message.content)
