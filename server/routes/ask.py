@@ -40,12 +40,13 @@ def ask(req: AskRequest, db: Session = Depends(get_db)):
         vector_store = FAISS.load_local(str(VECTOR_DIR), embeddings, allow_dangerous_deserialization=True,)
         responses = ask_llm(req.question, vectorstore=vector_store, top_k=10)
         responses = [r.metadata for r in responses]
+        print(responses)
         unique_titles = set()
         response = []
         for res in responses:
             if res["notice_title"] not in unique_titles:
                 unique_titles.add(res["notice_title"])
-                response.append({"notice_title": res["notice_title"], "file_name": res["file_name"]})
+                response.append({"notice_title": res["notice_title"], "file_name": res["file_name"], "url": res["url"]})
         return json.dumps(response, ensure_ascii=False)
     else:
         return response

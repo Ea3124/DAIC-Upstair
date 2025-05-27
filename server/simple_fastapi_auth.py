@@ -186,6 +186,7 @@ def crawl_and_parse(keyword: str = KEYWORD, max_pages: int = MAX_PAGES, max_noti
 
             notice_id = next_notice_id
             parsed_notices[notice_id] = {"title": notice_title, "url": detail_url, "attachments": []}
+            print(parsed_notices)
             next_notice_id += 1
 
             try:
