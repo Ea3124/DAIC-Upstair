@@ -108,6 +108,7 @@ fun HomeScreen() {
             Spacer(modifier = Modifier.height(16.dp))
 
             // 검색창
+            var searchText by remember { mutableStateOf("") }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -123,7 +124,15 @@ fun HomeScreen() {
                     modifier = Modifier.size(40.dp) // 원하는 사이즈 지정
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("장학금을 검색해보세요...", color = Color.Gray, modifier = Modifier.weight(1f))
+                androidx.compose.material3.TextField(
+                    value = searchText,
+                    onValueChange = { searchText = it },
+                    placeholder = { Text("장학금을 검색해보세요...") },
+                    colors = androidx.compose.material3.TextFieldDefaults.textFieldColors(containerColor = Color.Transparent),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                )
                 Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF1D3A8A))
             }
 
