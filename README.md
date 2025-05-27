@@ -84,22 +84,24 @@ DAIC-Upstair/
 │   └── simple_fastapi_auth.py   # 간단한 FastAPI 인증 모듈
 ├── .gitignore
 └── README.md                    # 전체 프로젝트 설명서
-
+```
 
 ## 🧑‍🤝‍🧑 팀원 소개
+```
 | 이름   | 역할             | GitHub                                    |
 | 이승재 | 팀장 / 백엔드 개발 | [@Ea3124](https://github.com/Ea3124)      |
 | 박준혁 | 백엔드 개발       | [@JakeFRCSE](https://github.com/JakeFRCSE)|
 | 김정희 | 안드로이드 개발    | [@lovelhee](https://github.com/lovelhee)  |
 | 이병찬 | 안드로이드 개발    | [@mark77234](https://github.com/mark77234)|
 | 금비   |  인공지능 모델    | [@Bee-Geum](https://github.com/Bee-Geum)  |
+```
 
 ## 💡 참고 자료 및 아이디어 출처
-*Upstage Document Parse
-*Scolo | Personalized Scholarship Finder
-*New AI-driven platform matches students with scholarships
-*문서의 구조를 완벽히 이해하는 LLM, Upstage Solar Pro 제대로 사용하기(gpt-4o 와의 비교)
-*LangGraph Retrieval Agent를 활용한 동적 문서 검색 및 처리 - 테디노트
-*Upstage Building end-to-end RAG system using Solar LLM and MongoDB Atlas
-*CH08 임베딩(Embedding) - <랭체인LangChain 노트> - LangChain 한국어 튜토리얼
-*12. UpstageLayoutAnalysisLoader - <랭체인LangChain 노트> - LangChain 한국어 튜토리얼
+- *Upstage Document Parse
+- *Scolo | Personalized Scholarship Finder
+- *New AI-driven platform matches students with scholarships
+- *문서의 구조를 완벽히 이해하는 LLM, Upstage Solar Pro 제대로 사용하기(gpt-4o 와의 비교)
+- *LangGraph Retrieval Agent를 활용한 동적 문서 검색 및 처리 - 테디노트
+- *Upstage Building end-to-end RAG system using Solar LLM and MongoDB Atlas
+- *CH08 임베딩(Embedding) - <랭체인LangChain 노트> - LangChain 한국어 튜토리얼
+- *12. UpstageLayoutAnalysisLoader - <랭체인LangChain 노트> - LangChain 한국어 튜토리얼
