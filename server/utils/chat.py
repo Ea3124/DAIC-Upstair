@@ -110,19 +110,19 @@ if __name__ == "__main__":
     # First turn
     history = []
     question = "과학 장학금 신청 마감일은 언제인가요?"
-    response = RAG_chat(question, vectorstore, history, use_history=True)
+    response = RAG_chat(question, vectorstore, use_history=True, top_k=1)
     print("Assistant:", response)
     # history.append({"role": "user", "content": question})
     # history.append({"role": "assistant", "content": response})
 
     # Second turn
     question = "우수 학생을 위한 특별 장학금 지원 자격은 무엇인가요?"
-    response = RAG_chat(question, vectorstore, history, use_history=True)
+    response = RAG_chat(question, vectorstore, use_history=True, top_k=1)
     print("Assistant:", response)
     # history.append({"role": "user", "content": question})
     # history.append({"role": "assistant", "content": response})
 
     # Third turn
     question = "해외 유학 장학금 신청 마감일은 언제인가요?"
-    response = RAG_chat(question, vectorstore, history, use_history=True)
+    response = RAG_chat(question, vectorstore, use_history=True, top_k=1)
     print("Assistant:", response)
