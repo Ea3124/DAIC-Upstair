@@ -32,18 +32,6 @@ def get_user(email: str, db: Session = Depends(get_db)):
         "status": user.status
     }
 
-
-@user_router.put("/user/update")
-def update_user(req: UserUpdateRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == req.email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    user.gpa = req.gpa
-    user.grade = req.grade
-    user.status = req.status
-    db.commit()
-    return {"success": True, "message": "User updated"}
-
 @user_router.post("/user/sample")
 def create_sample_users(db: Session = Depends(get_db)):
     sample_users = [
