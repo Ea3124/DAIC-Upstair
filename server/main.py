@@ -2,7 +2,10 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from auth import login_router
+from routes.auth import login_router
+from routes.user import user_router
+from routes.docs import doc_router
+from db.db import init_db
 
 app = FastAPI()
 
@@ -16,4 +19,8 @@ app.add_middleware(
 )
 # --------------------------------------------------------------------
 
+init_db()  # 앱 시작 시 DB 테이블 생성
+
 app.include_router(login_router)
+app.include_router(user_router)
+app.include_router(doc_router)
