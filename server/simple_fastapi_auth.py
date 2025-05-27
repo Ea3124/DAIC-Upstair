@@ -1,174 +1,333 @@
-"""
-실행 예시
----------
-$ uvicorn simple_fastapi_auth:app --reload
-"""
-
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
-from pathlib import Path
-from dotenv import load_dotenv
-import mimetypes
-import requests
-import os
+"""
+PNU Scholarship Parser API  (공지 1개 – 첨부 N개 구조)
+---------------------------------------------------
+실행 예시
+$ uvicorn scholarship_parser:app --reload
+"""
+
+# ────────────────────────── 표준 라이브러리 ──────────────────────────
 import logging
+import mimetypes
+import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List
+from urllib.parse import urljoin
 
-# ──────────────────────────── 환경설정 ────────────────────────────
-load_dotenv()                                   # .env → 환경변수 반영
-UPSTAGE_API_KEY = os.getenv("UPSTAGE_API_KEY")  # 必
+# ────────────────────────── 외부 라이브러리 ──────────────────────────
+import requests
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_upstage import UpstageEmbeddings
+from langchain_community.vectorstores import FAISS
+from requests.adapters import HTTPAdapter               # ★
+from requests.exceptions import HTTPError, ReadTimeout  # ★
+from urllib3.util import Retry                          # ★
 
+# ────────────────────────── 환경설정 ──────────────────────────
+load_dotenv()
+UPSTAGE_API_KEY = os.getenv("UPSTAGE_API_KEY")
 if not UPSTAGE_API_KEY:
     raise RuntimeError("환경변수 UPSTAGE_API_KEY 가 설정되지 않았습니다.")
 
-logging.basicConfig(level=logging.INFO,
-                    format="%(levelname)s | %(message)s")
+# ────────────────────────── 로깅 설정 ──────────────────────────
+logger = logging.getLogger(__name__)     # ★ 모듈 로거 사용
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter("%(levelname)s | %(message)s"))
+logger.addHandler(handler)
 
-# ──────────────────────────── FastAPI ────────────────────────────
+# ────────────────────────── FastAPI ──────────────────────────
 app = FastAPI(title="PNU Scholarship Parser API")
 
-# 인메모리 DB
-parsed_docs: dict[int, dict[str, str]] = {}   # {id: {"title":.., "content_html":..}}
-next_id: int = 1
+# ────────────────────────── 상수 ────────────────────────────
+BASE_URL = "https://cse.pusan.ac.kr"
+LIST_URL = f"{BASE_URL}/bbs/cse/2605/artclList.do"
+SUPPORTED_EXTENSIONS = (
+    ".pdf",
+    ".hwp",
+    ".hwpx",
+    ".docx",
+    ".ppt",
+    ".pptx",
+)
+KEYWORD = "장학"
+CATEGORY_SEQ = "4229"
+MAX_PAGES = 1
+MAX_NOTICES = 1
 
+# ────────────────────────── 인메모리 데이터 구조 ─────────────
+@dataclass
+class AttachmentDoc:
+    id: int
+    file_name: str
+    content_html: str
+    content_text: str
 
-# ──────────────────────────── 유틸 ────────────────────────────────
+parsed_notices: Dict[int, Dict] = {}
+next_notice_id: int = 1
+next_attach_id: int = 1
+
+# ────────────────────────── Embedding & FAISS ───────────────
+embeddings = UpstageEmbeddings(
+    model="solar-embedding-1-large",
+    upstage_api_key=UPSTAGE_API_KEY,
+)
+vector_store: FAISS | None = None
+VECTOR_DIR = Path("./faiss_index")
+
+# ────────────────────────── Session & Retry 설정 ────────────
+retry_policy = Retry(                              # ★
+    total=2,
+    backoff_factor=1.5,
+    allowed_methods={"POST"},
+    status_forcelist=[502, 503, 504],
+)
+session = requests.Session()                       # ★
+session.mount("https://", HTTPAdapter(max_retries=retry_policy))
+
+# ────────────────────────── 유틸 함수 ───────────────────────
 def guess_mime(fname: str) -> str:
-    """
-    파일 이름에서 MIME 타입 추정 (mimetypes + 확장자 보정)
-    """
     mime, _ = mimetypes.guess_type(fname)
     if mime:
         return mime
     ext = Path(fname).suffix.lower()
     return {
-        ".hwp":  "application/x-hwp",
+        ".hwp": "application/x-hwp",
         ".hwpx": "application/x-hwp",
     }.get(ext, "application/octet-stream")
 
 
 def call_upstage(file_name: str, file_bytes: bytes) -> dict:
-    """
-    Upstage Document-Parse 동기 API 호출 후 JSON 반환
-    """
+    """Upstage Document-Parse 호출 후 JSON 반환 (ReadTimeout 처리)"""
     api_url = "https://api.upstage.ai/v1/document-digitization"
     headers = {"Authorization": f"Bearer {UPSTAGE_API_KEY}"}
+    files = {"document": (file_name, file_bytes, guess_mime(file_name))}
+    data = {"model": "document-parse"}
 
-    files = {
-        "document": (file_name, file_bytes, guess_mime(file_name))
-    }
-    data = {
-        "model": "document-parse"      # 필수
-        # 필요 시 "ocr": "force", "base64_encoding": "['table']" 등 추가
-    }
-
-    resp = requests.post(api_url, headers=headers, files=files, data=data, timeout=60)
-    resp.raise_for_status()
+    try:
+        resp = session.post(
+            api_url,
+            headers=headers,
+            files=files,
+            data=data,
+            timeout=(10, 180),       # ★ (connect 10s, read 180s)
+        )
+        resp.raise_for_status()
+    except ReadTimeout as e:          # ★
+        logger.warning(f"⏰ ReadTimeout ▶ {file_name} – {e}")
+        raise
+    except HTTPError as e:
+        logger.error(f"HTTPError ▶ {file_name} – {e}")
+        raise
     return resp.json()
 
+# ────────────────────────── 크롤러 ──────────────────────────
+def crawl_and_parse(
+    keyword: str = KEYWORD,
+    max_pages: int = MAX_PAGES,
+    max_notices: int = MAX_NOTICES,
+) -> None:
+    """장학 카테고리 + 제목 검색 크롤러"""
+    global next_notice_id, next_attach_id
 
-# ──────────────────────────── 크롤러 ─────────────────────────────
-def crawl_and_parse() -> None:
-    """
-    부산대 CSE 게시판을 돌며 첨부파일 → Upstage 변환 → HTML 저장
-    """
-    global next_id
-    base_url = "https://cse.pusan.ac.kr"
-    list_url = f"{base_url}/bbs/cse/2605/artclList.do"
     headers = {"User-Agent": "Mozilla/5.0"}
-    session = requests.Session()
 
-    logging.info("[START] 크롤링 시작")
-    resp = session.get(list_url, headers=headers, timeout=15)
-    logging.debug(f"[DEBUG] 목록 페이지 status: {resp.status_code}")
-    resp.raise_for_status()
+    logger.info("[START] 크롤링 시작")
+    page = 1
+    while page <= max_pages and len(parsed_notices) < max_notices:
+        payload = {
+            "srchColumn": "sj",
+            "srchWrd": keyword,
+            "bbsClSeq": CATEGORY_SEQ,
+            "page": str(page),
+            "isViewMine": "false",
+        }
 
-    soup = BeautifulSoup(resp.text, "html.parser")
-    articles = soup.select("td._artclTdTitle a.artclLinkView")
-    logging.info(f"[INFO] 게시글 수: {len(articles)}")
+        resp = session.post(LIST_URL, headers=headers, data=payload, timeout=15)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
 
-    for a in articles:
-        title = a.get_text(strip=True)
-        detail_url = urljoin(base_url, a["href"])
-        logging.info(f"[INFO] 처리 중: {title}")
+        articles = soup.select("td._artclTdTitle a.artclLinkView")
+        if not articles:
+            break
 
-        try:
-            # ── 상세 페이지 ──
-            detail_resp = session.get(detail_url, headers=headers, timeout=15)
-            detail_resp.raise_for_status()
-            detail_soup = BeautifulSoup(detail_resp.text, "html.parser")
+        logger.info(f"[INFO] page {page} - 글 {len(articles)}개")
+        for a in articles:
+            if len(parsed_notices) >= max_notices:
+                break
 
-            file_links = detail_soup.select(
-                'dl.artclForm dd.artclInsert li a[href*="/download.do"]')
-            logging.debug(f"[DEBUG] 첨부파일 수: {len(file_links)}")
-            if not file_links:
+            row = a.find_parent("tr")
+            if row and any(cls.startswith("headline") for cls in (row.get("class") or [])):
+                logger.info(f"[SKIP] 고정공지: {a.get_text(strip=True)}")
                 continue
 
-            file_link  = file_links[0]              # 첫 파일만
-            file_name  = file_link.get_text(strip=True)
-            file_url   = urljoin(detail_url, file_link["href"])
+            notice_title = a.get_text(strip=True)
+            detail_url = urljoin(BASE_URL, a["href"])
+            logger.info(f"[INFO] 처리 중(공지): {notice_title}")
 
-            file_resp = session.get(file_url, headers=headers, timeout=30)
-            file_resp.raise_for_status()
+            notice_id = next_notice_id
+            parsed_notices[notice_id] = {"title": notice_title, "attachments": []}
+            next_notice_id += 1
 
-            # ── Upstage 변환 ──
-            result_json = call_upstage(file_name, file_resp.content)
+            try:
+                detail_resp = session.get(detail_url, headers=headers, timeout=15)
+                detail_resp.raise_for_status()
+                detail_soup = BeautifulSoup(detail_resp.text, "html.parser")
+            except Exception as e:
+                logger.error(f"[ERROR] 상세 페이지 오류: {e}")
+                continue
 
-            html_segments = [
-                elem["content"]["html"]
-                for elem in result_json.get("elements", [])
-                if "content" in elem
-            ]
-            full_html = "\n".join(html_segments) or "<p>(빈 문서)</p>"
+            attachments = detail_soup.select(
+                'dl.artclForm dd.artclInsert li a[href*="/download.do"]'
+            )
+            if not attachments:
+                logger.info("[SKIP] 첨부 없음")
+                continue
 
-            parsed_docs[next_id] = {
-                "title": f"{title} ({file_name})" if file_name else title,
-                "content_html": full_html,
-            }
-            logging.info(f"[✅ 저장] ID {next_id} - {title}")
-            next_id += 1
+            for file_link in attachments:
+                file_name = file_link.get_text(strip=True)
+                if not file_name.lower().endswith(SUPPORTED_EXTENSIONS):
+                    logger.warning(f"[SKIP] 미지원 포맷: {file_name}")
+                    continue
 
-        except Exception as e:
-            logging.error(f"[ERROR] {title} 처리 중 오류: {e}")
+                file_url = urljoin(detail_url, file_link["href"])
+                try:
+                    file_resp = session.get(file_url, headers=headers, timeout=30)
+                    file_resp.raise_for_status()
+                except Exception as e:
+                    logger.error(f"[ERROR] 파일 다운로드 실패: {file_name} – {e}")
+                    continue
+
+                # ── Upstage 변환 요청 ──
+                logger.info(f"📤 Upstage 요청 시작 ▶ {file_name}")          # ★
+                try:
+                    result_json = call_upstage(file_name, file_resp.content)
+                except ReadTimeout:
+                    logger.error(f"[SKIP] 변환 지연 ▶ {file_name}")        # ★
+                    continue
+                except HTTPError as e:
+                    logger.error(f"[ERROR] {file_name} 변환 실패: {e}")
+                    continue
+
+                html_segments = [
+                    elem["content"]["html"]
+                    for elem in result_json.get("elements", [])
+                    if "content" in elem
+                ]
+                full_html = "\n".join(html_segments) or "<p>(빈 문서)</p>"
+
+                text_segments = []
+
+                for html in html_segments:
+                    soup = BeautifulSoup(html, "html.parser")
+                    plain_text = soup.get_text(" ", strip=True)
+                    if plain_text:
+                        text_segments.append(plain_text)
+
+                full_text = "\n".join(text_segments) or "(빈 문서)"
+
+                parsed_notices[notice_id]["attachments"].append(
+                    AttachmentDoc(
+                        id=next_attach_id,
+                        file_name=file_name,
+                        content_html=full_html,
+                        content_text=full_text,
+                    )
+                )
+                logger.info(
+                    f"[✅ 저장] notice {notice_id}, attach {next_attach_id}: {file_name}"
+                )
+                next_attach_id += 1
+
+        page += 1
+
+# ────────────────────────── FAISS 인덱스 빌드 ──────────────
+def build_faiss_index() -> None:
+    global vector_store
+    if not parsed_notices:
+        logger.warning("빌드할 문서가 없습니다.")
+        return
+
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
+    texts: List[str] = []
+    metadatas: List[dict] = []
+
+    for notice in parsed_notices.values():
+        for attach in notice["attachments"]:
+            raw_text = attach.content_html
+            for chunk in splitter.split_text(raw_text):
+                texts.append(chunk)
+                metadatas.append({
+                    "notice_title": notice["title"],
+                    "attachment_id": attach.id,
+                    "file_name": attach.file_name,
+                })
+
+    if not texts:
+        logger.warning("임베딩할 텍스트가 없습니다.")
+        return
+
+    vector_store = FAISS.from_texts(texts=texts, embedding=embeddings, metadatas=metadatas)
+    vector_store.save_local(str(VECTOR_DIR))
+    logger.info(f"[✅ FAISS] {len(texts)}개 청크 저장 완료")
+
+# ────────────────────────── API 엔드포인트 ────────────────
+@app.get("/notices")
+def list_notices():
+    return [
+        {
+            "notice_id": nid,
+            "title": notice["title"],
+            "attachments": [
+                {"id": att.id, "file_name": att.file_name}
+                for att in notice["attachments"]
+            ],
+        }
+        for nid, notice in parsed_notices.items()
+    ]
 
 
-# ──────────────────────────── API 엔드포인트 ─────────────────────
-@app.get("/scholarships")
-def list_scholarships() -> list[dict]:
-    """
-    저장된 문서 목록
-    """
-    return [{"id": doc_id, "title": doc["title"]}
-            for doc_id, doc in parsed_docs.items()]
+@app.get("/notices/{notice_id}/{attach_id}")
+def get_attachment(notice_id: int, attach_id: int):
+    notice = parsed_notices.get(notice_id)
+    if not notice:
+        raise HTTPException(404, "Notice not found")
+
+    attach = next((a for a in notice["attachments"] if a.id == attach_id), None)
+    if not attach:
+        raise HTTPException(404, "Attachment not found")
+
+    return {
+        "notice_id": notice_id,
+        "title": notice["title"],
+        "attachment_id": attach_id,
+        "file_name": attach.file_name,
+        "content_html": attach.content_html,
+        "content_text": attach.content_text,
+    }
 
 
-@app.get("/scholarships/{doc_id}")
-def get_scholarship(doc_id: int) -> dict:
-    """
-    지정 ID 문서의 HTML 반환
-    """
-    doc = parsed_docs.get(doc_id)
-    if not doc:
-        raise HTTPException(404, "Document not found")
-    return {"id": doc_id, "title": doc["title"], "content_html": doc["content_html"]}
-
-
-@app.post("/scholarships/refresh")
-def refresh_scholarships() -> dict:
-    """
-    게시판 재크롤링 - 메모리 초기화
-    """
-    parsed_docs.clear()
-    global next_id
-    next_id = 1
+@app.post("/notices/refresh")
+def refresh_notices(keyword: str = KEYWORD):
+    parsed_notices.clear()
+    global next_notice_id, next_attach_id
+    next_notice_id = 1
+    next_attach_id = 1
     try:
-        crawl_and_parse()
-        return {"status": "success", "count": len(parsed_docs)}
+        crawl_and_parse(keyword)
+        build_faiss_index()
+        return {
+            "status": "success",
+            "notices": len(parsed_notices),
+            "faiss": "built" if vector_store else "none",
+        }
     except Exception as e:
         raise HTTPException(500, str(e))
 
-
-# ──────────────────────────── (옵션) 서버 기동 시 자동 수집 ─────
+# ────────────────────────── (옵션) 서버 기동 시 자동 수집 ───
 # crawl_and_parse()
