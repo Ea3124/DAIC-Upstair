@@ -17,7 +17,7 @@
         tools:targetApi="31" >
 
         <activity
-            android:name=".login.LoginActivity"
+            android:name=".mypage.MyPageActivity"
             android:exported="false"
             android:theme="@style/Theme.Upstairdev" />
 
@@ -32,7 +32,7 @@
             android:theme="@style/Theme.Upstairdev" />
 
         <activity
-            android:name=".mypage.MyPageActivity"
+            android:name=".login.LoginActivity"
             android:exported="true"
             android:theme="@style/Theme.Upstairdev" >
             <intent-filter>
