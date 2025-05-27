@@ -3,7 +3,9 @@ package com.example.upstair_dev.home
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,6 +29,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -96,7 +100,7 @@ fun HomeScreen() {
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .background(Color.White)
+                .background(Color(0xFFF9FAFB))
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -110,7 +114,11 @@ fun HomeScreen() {
                     .padding(12.dp)
                     .fillMaxWidth()
             ) {
-                Icon(painter = painterResource(id = R.drawable.robot), contentDescription = "Chatbot", tint = Color(0xFF1D3A8A))
+                Image(
+                    painter = painterResource(id = R.drawable.robot),
+                    contentDescription = "Chatbot",
+                    modifier = Modifier.size(40.dp) // 원하는 사이즈 지정
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("장학금을 검색해보세요...", color = Color.Gray, modifier = Modifier.weight(1f))
                 Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF1D3A8A))
@@ -198,22 +206,30 @@ fun ScholarshipCard(scholarship: Scholarship) {
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 6.dp)
+            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(scholarship.name, fontWeight = FontWeight.Bold)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(scholarship.name, fontWeight = FontWeight.Bold)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(statusColor)
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(scholarship.status, fontSize = 12.sp, color = Color.Black)
+                }
+            }
             Spacer(modifier = Modifier.height(4.dp))
             Text("마감일: ${scholarship.deadline}", color = Color.Gray, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Box(
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(statusColor)
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
-            ) {
-                Text(scholarship.status, fontSize = 12.sp, color = Color.Black)
-            }
+
         }
     }
 }
