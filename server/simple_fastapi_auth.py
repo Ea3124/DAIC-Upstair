@@ -8,10 +8,8 @@ PNU Scholarship Parser API – v1.1
   3. **장학금 조건 키워드 매칭** – 간단한 룰 기반 스캐닝(알람용) + 로깅.
   4. **로깅 강화** – 단계별 진행 상황과 스킵 사유가 콘솔에 출력.
 
-실행 예시
-$ uvicorn scholarship_parser:app --reload
 """
-
+from fastapi import APIRouter
 # ───────── 표준 라이브러리 ─────────
 import hashlib
 import json
@@ -22,6 +20,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List
 from urllib.parse import urljoin
+
+from db.db import SessionLocal, Document  # DB 세션 및 모델
+
 
 # ───────── 외부 라이브러리 ─────────
 import requests
@@ -49,7 +50,8 @@ handler.setFormatter(logging.Formatter("%(levelname)s | %(message)s"))
 logger.addHandler(handler)
 
 # ───────── FastAPI ─────────
-app = FastAPI(title="PNU Scholarship Parser API v1.1")
+scholarship_router = APIRouter()
+
 
 # ───────── 상수 ─────────
 BASE_URL = "https://cse.pusan.ac.kr"
@@ -238,6 +240,26 @@ def crawl_and_parse(keyword: str = KEYWORD, max_pages: int = MAX_PAGES, max_noti
                 parsed_notices[notice_id]["attachments"].append(
                     AttachmentDoc(id=next_attach_id, file_name=file_name, content_html=full_html, content_text=full_text, matched_rules=matched)
                 )
+                # DB에 문서 저장
+                try:
+                    db = SessionLocal()
+                    new_doc = Document(
+                        title=notice_title,
+                        link=detail_url,
+                        content=full_text,
+                        gpa=None,
+                        start_date=None,
+                        end_date=None,
+                        status=None,
+                        grade=None,
+                    )
+                    db.add(new_doc)
+                    db.commit()
+                    logger.info(f"✅ DB 저장 완료: {notice_title}")
+                except Exception as e:
+                    logger.error(f"❌ DB 저장 실패: {e}")
+                finally:
+                    db.close()
                 next_attach_id += 1
                 known_hashes.add(f_hash)
         page += 1
@@ -289,12 +311,12 @@ def build_faiss_index() -> None:
 
 # ───────── API ───────── ─────────
 
-@app.get("/notices")
+@scholarship_router.get("/notices")
 def list_notices():
     return [{"notice_id": nid, "title": n["title"], "attachments": [{"id": a.id, "file_name": a.file_name, "rules": a.matched_rules} for a in n["attachments"]]} for nid, n in parsed_notices.items()]
 
 
-@app.get("/notices/{notice_id}/{attach_id}")
+@scholarship_router.get("/notices/{notice_id}/{attach_id}")
 def get_attachment(notice_id: int, attach_id: int):
     notice = parsed_notices.get(notice_id)
     if not notice:
@@ -313,7 +335,7 @@ def get_attachment(notice_id: int, attach_id: int):
     }
 
 
-@app.post("/notices/refresh")
+@scholarship_router.post("/notices/refresh")
 def refresh_notices(background_tasks: BackgroundTasks, keyword: str = KEYWORD):
     parsed_notices.clear()
     global next_notice_id, next_attach_id
