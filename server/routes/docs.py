@@ -191,43 +191,6 @@ def create_sample_documents(db: Session = Depends(get_db)):
     return {"success": True, "created_document_ids": created_docs}
 
 
-@doc_router.get("/documents/filter")
-def filter_documents(
-    min_gpa: Optional[float] = None,
-    grade: Optional[int] = None,
-    status: Optional[str] = None,  # "재학" 또는 "휴학"
-    db: Session = Depends(get_db)
-):
-    query = db.query(Document)
-    conditions = []
-
-    # 각 조건을 OR로 누적
-    if min_gpa is not None:
-        conditions.append(Document.gpa >= min_gpa)
-    if grade is not None:
-        conditions.append(Document.grade == grade)
-    if status is not None:
-        conditions.append(Document.status == status)
-    
-    # 날짜 조건도 OR로 추가
-    conditions.append(Document.start_date <= date.today())
-    conditions.append(Document.end_date >= date.today())
-
-    # OR 조건 적용
-    if conditions:
-        query = query.filter(or_(*conditions))
-
-    # 정렬 조건 추가 (GPA 높은 순, 학년 낮은 순)
-    query = query.order_by(desc(Document.gpa), Document.grade)
-
-    docs = query.all()
-    return [{
-        "title": d.title, 
-        "link": d.link, 
-        "gpa": d.gpa, 
-        "grade": d.grade, 
-        "status": d.status
-    } for d in docs]
 
 
 @doc_router.get("/documents/filter")
@@ -240,24 +203,35 @@ def filter_documents(
     query = db.query(Document)
     conditions = []
 
-    # 각 조건을 OR로 누적
+    # 각 조건을 and로 누적
     if min_gpa is not None:
-        conditions.append(Document.gpa >= min_gpa)
+        query = query.filter(Document.gpa >= min_gpa)
     if grade is not None:
-        conditions.append(Document.grade == grade)
+        query = query.filter(Document.grade == grade)
     if status is not None:
-        conditions.append(Document.status == status)
+        query = query.filter(Document.status == status)
+    # 날짜 조건도 AND로 추가
+    query = query.filter(Document.start_date >= date.today())
+    query = query.filter(Document.end_date <= date.today())
+    # # 각 조건을 OR로 누적
+    # if min_gpa is not None:
+    #     conditions.append(Document.gpa >= min_gpa)
+    # if grade is not None:
+    #     conditions.append(Document.grade == grade)
+    # if status is not None:
+    #     conditions.append(Document.status == status)
     
-    # 날짜 조건도 OR로 추가
-    conditions.append(Document.start_date <= date.today())
-    conditions.append(Document.end_date >= date.today())
+    # # 날짜 조건도 OR로 추가
+    # conditions.append(Document.start_date <= date.today())
+    # conditions.append(Document.end_date >= date.today())
 
-    # OR 조건 적용
-    if conditions:
-        query = query.filter(or_(*conditions))
 
-    # 정렬 조건 추가 (GPA 높은 순, 학년 낮은 순)
-    query = query.order_by(desc(Document.gpa), Document.grade)
+    # # OR 조건 적용
+    # if conditions:
+    #     query = query.filter(or_(*conditions))
+
+    # # 정렬 조건 추가 (GPA 높은 순, 학년 낮은 순)
+    # query = query.order_by(desc(Document.gpa), Document.grade)
 
     docs = query.all()
     return [{

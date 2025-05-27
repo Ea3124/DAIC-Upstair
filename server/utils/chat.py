@@ -65,14 +65,14 @@ def RAG_chat(question: str, vectorstore: FAISS, top_k: int = 3, messages: Option
         response: 응답(str)
     """
     search_result = vectorstore.similarity_search(question, k=top_k)
-    response = chat_with_solar(question, search_result, messages)
-    if use_history:
-        if messages:
-            messages.append({"role": "user", "content": question})
-            messages.append({"role": "assistant", "content": response})
-        else:
-            messages = [{"role": "user", "content": question}, {"role": "assistant", "content": response}]
-    return response
+    #response = chat_with_solar(question, search_result, messages)
+    # if use_history:
+    #     if messages:
+    #         messages.append({"role": "user", "content": question})
+    #         messages.append({"role": "assistant", "content": response})
+    #     else:
+    #         messages = [{"role": "user", "content": question}, {"role": "assistant", "content": response}]
+    return search_result
 
 def make_vectorstore(texts: Optional[List[str]] = None, metadatas: Optional[List[Dict[str, str]]] = None):
     if texts is None:

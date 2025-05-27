@@ -23,8 +23,8 @@ def get_db():
     finally:
         db.close()
 
-# def ask_llm(question: str, vectorstore: FAISS, top_k: int):
-#     return RAG_chat(question, vectorstore, top_k=top_k)
+def ask_llm(question: str, vectorstore: FAISS, top_k: int):
+    return RAG_chat(question, vectorstore, top_k=top_k)
 
 def filter_documents_api(min_gpa: Optional[float] = None, 
                          grade: Optional[int] = None, 
@@ -141,7 +141,6 @@ def run_conversation(question: str, *args, **kwargs):
                     grade=function_args.get("grade"),
                     status=function_args.get("status"),
                 )
-                print(f"function_response: {function_response}")
                 return function_response
             elif function_name == "ask_llm":
                 function_response = function_to_call(
