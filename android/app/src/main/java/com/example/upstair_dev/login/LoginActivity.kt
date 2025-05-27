@@ -1,5 +1,6 @@
 package com.example.upstair_dev.login
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -43,6 +45,7 @@ import com.example.upstair_dev.R
 import com.example.upstair_dev.data.model.LoginRequest
 import com.example.upstair_dev.data.model.LoginResponse
 import com.example.upstair_dev.data.network.RetrofitClient
+import com.example.upstair_dev.home.HomeActivity
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -58,6 +61,9 @@ class LoginActivity : ComponentActivity() {
 
 @Composable
 fun LoginScreen() {
+
+    val context = LocalContext.current
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var resultText by remember { mutableStateOf("") }
@@ -132,6 +138,8 @@ fun LoginScreen() {
                                 resultText = if (response.isSuccessful) {
                                     val name = response.body()?.name ?: "알 수 없음"
                                     Log.d("API", "로그인 성공: $name")
+                                    val intent = Intent(context, HomeActivity::class.java)
+                                    context.startActivity(intent)
                                     "환영합니다, $name"
                                 } else {
                                     Log.e("API", "로그인 실패: ${response.code()}")
