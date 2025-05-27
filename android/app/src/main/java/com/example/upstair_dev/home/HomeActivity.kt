@@ -337,7 +337,7 @@ fun HomeScreen() {
                                     expanded = yearExpanded,
                                     onDismissRequest = { yearExpanded = false }
                                 ) {
-                                    listOf("1학년", "2학년", "3학년", "4학년").forEach {
+                                    listOf("1", "2", "3", "4").forEach {
                                         DropdownMenuItem(
                                             text = { Text(it, color = Color.Black) },
                                             onClick = {
