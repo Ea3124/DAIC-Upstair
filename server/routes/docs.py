@@ -221,7 +221,14 @@ def filter_documents(
     query = query.order_by(desc(Document.gpa), Document.grade)
 
     docs = query.all()
-    return [{
-        "notice_title": d.title, 
-        "url": d.link, 
-    } for d in docs]
+    # 중복 제거를 위해 딕셔너리 사용
+    unique_docs = {}
+    for d in docs:
+        if d.title not in unique_docs:
+            unique_docs[d.title] = {
+                "notice_title": d.title,
+                "url": d.link
+            }
+    
+    # 딕셔너리의 값들만 리스트로 변환
+    return list(unique_docs.values())
