@@ -18,6 +18,7 @@ import mimetypes
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from datetime import datetime
 from typing import Dict, List
 from urllib.parse import urljoin
 
@@ -35,6 +36,7 @@ from langchain_community.vectorstores import FAISS
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError, ReadTimeout
 from urllib3.util import Retry
+from openai import OpenAI
 
 # ───────── 환경설정 ─────────
 load_dotenv()
@@ -231,6 +233,87 @@ def crawl_and_parse(keyword: str = KEYWORD, max_pages: int = MAX_PAGES, max_noti
                 text_segments = [BeautifulSoup(h, "html.parser").get_text(" ", strip=True) for h in html_segments]
                 full_text = "\n".join(filter(None, text_segments)) or "(빈 문서)"
 
+                # 파일에서 장학금 조건 추출
+                client = OpenAI(
+                    api_key=UPSTAGE_API_KEY,
+                    base_url="https://api.upstage.ai/v1"
+                )
+                prompt = f"""Extract scholarship conditions from the following text:
+                {full_text}
+                Return the conditions in csv format including min_gpa,start_date,end_date,grade,status.
+                min_gpa is a float number between 0 and 4.5 inclusive.
+                min_gpa is the minimum GPA required for the scholarship.
+                start_date and end_date are date strings in YYYY-MM-DD format.
+                start_date is the start date of application period of the scholarship.
+                end_date is the end date of application period of the scholarship.
+                grade is an integer between 1 and 4.
+                grade is the attending year of the student.
+                status is a string that can be 재학 or 휴학.
+                if min_gpa is not found, return an empty string.
+                if start date is not found, return an empty string.
+                if end date is not found, return an empty string.
+                if grade is not found, return an empty string.
+                if status is not found, return an empty string.
+                the following is an example of the response:
+                min_gpa: 2.5, start_date: 2024-03-01, end_date: 2024-08-31, grade: 1, status: 재학
+                Do not include any other text in the response.
+                """
+                print(f"prompt: {prompt}")
+                response = client.chat.completions.create(
+                    model="solar-pro2-preview",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                conditions = response.choices[0].message.content
+                print(f"conditions: {conditions}")
+                if conditions:
+                    try:
+                        import re
+
+                        pattern_gpa = r"min_gpa:\s*([\d.]+)"
+                        match = re.search(pattern_gpa, conditions)
+
+                        try:
+                            gpa = match.group(1)
+                        except:
+                            gpa = None
+
+                        pattern_start_date = r"start_date:\s*([\d-]+)"
+                        match = re.search(pattern_start_date, conditions)
+
+                        try:
+                            start_date = match.group(1)
+                        except:
+                            start_date = None
+
+                        pattern_end_date = r"end_date:\s*([\d-]+)"
+                        match = re.search(pattern_end_date, conditions)
+
+                        try:
+                            end_date = match.group(1)
+                        except:
+                            end_date = None
+
+                        pattern_grade = r"grade:\s*(\d+)"
+                        match = re.search(pattern_grade, conditions)
+
+                        try:
+                            grade = match.group(1)
+                        except:
+                            grade = None
+
+                        pattern_status = r"status:\s*(\S+)"
+                        match = re.search(pattern_status, conditions)
+
+                        try:
+                            status = match.group(1)
+                        except:
+                            status = None
+
+                        print(f"gpa: {gpa}, start_date: {start_date}, end_date: {end_date}, grade: {grade}, status: {status}")  
+                    except Exception as e:
+                        logger.error(f"❌ 조건 파싱 실패: {e}")
+                        continue
+
                 matched = match_rules(full_text)
                 if matched:
                     logger.info(f"🔔 알림 매칭: {matched} – {file_name}")
@@ -247,17 +330,34 @@ def crawl_and_parse(keyword: str = KEYWORD, max_pages: int = MAX_PAGES, max_noti
                         title=notice_title,
                         link=detail_url,
                         content=full_text,
-                        gpa=None,
-                        start_date=None,
-                        end_date=None,
-                        status=None,
-                        grade=None,
+                        gpa=float(gpa) if gpa else None,
+                        start_date=datetime.strptime(start_date, "%Y-%m-%d") if start_date else None,
+                        end_date=datetime.strptime(end_date, "%Y-%m-%d") if end_date else None,
+                        status=status if status else None,
+                        grade=int(grade) if grade else None,
                     )
                     db.add(new_doc)
                     db.commit()
                     logger.info(f"✅ DB 저장 완료: {notice_title}")
                 except Exception as e:
-                    logger.error(f"❌ DB 저장 실패: {e}")
+                    try:
+                        db.rollback()
+                        db = SessionLocal()
+                        new_doc = Document(
+                            title=notice_title,
+                            link=detail_url,
+                            content=full_text,
+                            gpa=None,
+                            start_date=None,
+                            end_date=None,
+                            status=None,
+                            grade=None,
+                        )
+                        db.add(new_doc)
+                        db.commit()
+                        logger.info(f"✅ DB 저장 완료: {notice_title}")
+                    except Exception as e:
+                        logger.error(f"❌ DB 저장 실패: {e}")
                 finally:
                     db.close()
                 next_attach_id += 1
