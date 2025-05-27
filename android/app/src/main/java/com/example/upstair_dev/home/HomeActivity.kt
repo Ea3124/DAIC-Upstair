@@ -215,7 +215,7 @@ fun HomeScreen() {
                                     expanded = statusExpanded,
                                     onDismissRequest = { statusExpanded = false }
                                 ) {
-                                    listOf("재학생", "휴학생", "졸업생").forEach {
+                                    listOf("재학생", "휴학생").forEach {
                                         DropdownMenuItem(text = { Text(it) }, onClick = {
                                             selectedStatus = it
                                             statusExpanded = false
