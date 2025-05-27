@@ -7,11 +7,7 @@ from fastapi import HTTPException
 from db.db import SessionLocal, Document
 from sqlalchemy import or_, desc
 
-from fastapi import HTTPException
-from db.db import SessionLocal, Document
-from sqlalchemy import or_, desc
-
-from fastapi import HTTPException
+import json
 from fastapi import Query
 
 doc_router = APIRouter()
@@ -203,35 +199,26 @@ def filter_documents(
     query = db.query(Document)
     conditions = []
 
-    # 각 조건을 and로 누적
+    # min_gpa와 grade 조건을 OR로 처리하고 null 값도 포함
     if min_gpa is not None:
-        query = query.filter(Document.gpa >= min_gpa)
+        # GPA가 null이거나 입력한 min_gpa 이상인 경우를 포함
+        conditions.append(or_(Document.gpa >= min_gpa, Document.gpa.is_(None)))
     if grade is not None:
-        query = query.filter(Document.grade == grade)
+        # grade가 null이거나 입력한 grade 이상인 경우를 포함
+        conditions.append(or_(Document.grade >= grade, Document.grade.is_(None)))
+    if conditions:
+        query = query.filter(or_(*conditions))
+
+    # status 조건은 AND로 처리 (null 포함하지 않음)
     if status is not None:
         query = query.filter(Document.status == status)
-    # 날짜 조건도 AND로 추가
-    query = query.filter(Document.start_date >= date.today())
-    query = query.filter(Document.end_date <= date.today())
-    # # 각 조건을 OR로 누적
-    # if min_gpa is not None:
-    #     conditions.append(Document.gpa >= min_gpa)
-    # if grade is not None:
-    #     conditions.append(Document.grade == grade)
-    # if status is not None:
-    #     conditions.append(Document.status == status)
     
-    # # 날짜 조건도 OR로 추가
-    # conditions.append(Document.start_date <= date.today())
-    # conditions.append(Document.end_date >= date.today())
+    # 날짜 조건도 AND로 추가
+    query = query.filter(Document.start_date <= date.today())
+    query = query.filter(Document.end_date >= date.today())
 
-
-    # # OR 조건 적용
-    # if conditions:
-    #     query = query.filter(or_(*conditions))
-
-    # # 정렬 조건 추가 (GPA 높은 순, 학년 낮은 순)
-    # query = query.order_by(desc(Document.gpa), Document.grade)
+    # 정렬 조건 추가 (GPA 높은 순, 학년 낮은 순)
+    query = query.order_by(desc(Document.gpa), Document.grade)
 
     docs = query.all()
     return [{
