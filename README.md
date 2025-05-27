@@ -52,11 +52,11 @@
 ![시스템 아키텍처](./assets/system_architecture.png)
 
 ## 🔧 설치 및 사용 방법
-```
+\```
 git clone https://github.com/Ea3124/DAIC-Upstair.git
 cd DAIC-Upstair/server
 pip install -r requirements.txt
-
+\```
 ## 📁 프로젝트 구조
 DAIC-Upstair/
 ├── android/                     # Android 앱 프로젝트
