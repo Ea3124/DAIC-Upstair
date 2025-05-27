@@ -411,30 +411,6 @@ def build_faiss_index() -> None:
 
 # ───────── API ───────── ─────────
 
-@scholarship_router.get("/notices")
-def list_notices():
-    return [{"notice_id": nid, "title": n["title"], "attachments": [{"id": a.id, "file_name": a.file_name, "rules": a.matched_rules} for a in n["attachments"]]} for nid, n in parsed_notices.items()]
-
-
-@scholarship_router.get("/notices/{notice_id}/{attach_id}")
-def get_attachment(notice_id: int, attach_id: int):
-    notice = parsed_notices.get(notice_id)
-    if not notice:
-        raise HTTPException(404, "Notice not found")
-    attach = next((a for a in notice["attachments"] if a.id == attach_id), None)
-    if not attach:
-        raise HTTPException(404, "Attachment not found")
-    return {
-        "notice_id": notice_id,
-        "title": notice["title"],
-        "attachment_id": attach_id,
-        "file_name": attach.file_name,
-        "matched_rules": attach.matched_rules,
-        "content_html": attach.content_html,
-        "content_text": attach.content_text,
-    }
-
-
 @scholarship_router.post("/notices/refresh")
 def refresh_notices(background_tasks: BackgroundTasks, keyword: str = KEYWORD):
     parsed_notices.clear()
