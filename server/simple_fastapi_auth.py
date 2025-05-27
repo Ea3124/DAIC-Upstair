@@ -254,7 +254,7 @@ def build_faiss_index() -> None:
         logger.warning("빌드할 문서가 없습니다.")
         return
 
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1024, chunk_overlap=256)
 
     # 1️⃣ 새로 수집된 모든 텍스트 청크 수집
     new_texts: List[str] = []
