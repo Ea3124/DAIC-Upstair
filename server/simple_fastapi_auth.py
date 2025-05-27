@@ -185,7 +185,7 @@ def crawl_and_parse(keyword: str = KEYWORD, max_pages: int = MAX_PAGES, max_noti
             logger.info(f"[INFO] 처리 중(공지): {notice_title}")
 
             notice_id = next_notice_id
-            parsed_notices[notice_id] = {"title": notice_title, "attachments": []}
+            parsed_notices[notice_id] = {"title": notice_title, "url": detail_url, "attachments": []}
             next_notice_id += 1
 
             try:
@@ -390,7 +390,8 @@ def build_faiss_index() -> None:
                     "notice_title": notice["title"],
                     "attachment_id": attach.id,
                     "file_name": attach.file_name,
-                })
+                    "url": notice.get("url"), 
+                })  
 
     if not new_texts:
         logger.info("[FAISS] 추가할 청크 없음 – 저장 스킵")
