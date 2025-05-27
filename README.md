@@ -59,6 +59,7 @@ pip install -r requirements.txt
 ```
 
 ## 📁 프로젝트 구조
+```
 DAIC-Upstair/
 ├── android/                     # Android 앱 프로젝트
 │   ├── .idea/
@@ -83,7 +84,7 @@ DAIC-Upstair/
 │   └── simple_fastapi_auth.py   # 간단한 FastAPI 인증 모듈
 ├── .gitignore
 └── README.md                    # 전체 프로젝트 설명서
-
+```
 
 ## 🧑‍🤝‍🧑 팀원 소개
 | 이름   | 역할             | GitHub                                    |
