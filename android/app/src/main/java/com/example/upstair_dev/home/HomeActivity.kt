@@ -95,7 +95,7 @@ fun HomeScreen() {
                                 Badge(
                                     containerColor = Color(0xFFFFC107), // 노란색
                                 ) {
-                                    Text("3", fontSize = 10.sp, color = Color.Black)
+                                    Text("2", fontSize = 10.sp, color = Color.Black)
                                 }
                             }
                         ) {
@@ -199,9 +199,6 @@ fun HomeScreen() {
                 }
             }
 
-
-
-
             Spacer(modifier = Modifier.height(24.dp))
 
             // 추천 장학금 헤더
@@ -260,7 +257,7 @@ fun HomeScreen() {
                         var grade by remember { mutableStateOf("") }
                         var statusExpanded by remember { mutableStateOf(false) }
                         var yearExpanded by remember { mutableStateOf(false) }
-                        var selectedStatus by remember { mutableStateOf("재학생") }
+                        var selectedStatus by remember { mutableStateOf("재학") }
                         var selectedYear by remember { mutableStateOf("1학년") }
 
                         Column(modifier = Modifier.padding(top = 8.dp)) {
@@ -303,7 +300,7 @@ fun HomeScreen() {
                                     expanded = statusExpanded,
                                     onDismissRequest = { statusExpanded = false }
                                 ) {
-                                    listOf("재학생", "휴학생").forEach {
+                                    listOf("재학", "휴학").forEach {
                                         DropdownMenuItem(
                                             text = { Text(it, color = Color.Black) }, // 텍스트도 검은색
                                             onClick = {
