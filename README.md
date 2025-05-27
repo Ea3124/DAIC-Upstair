@@ -49,7 +49,7 @@
 - **언어 및 프레임워크**: Python 3.10, FastAPI, LangChain, FAISS, BeautifulSoup
 - **AI 모델**: Upstage Document-Digitization, Upstage Embeddings (solar-embedding-1-large), Upstage Chat Model (SOLAR)
 - **시스템 아키텍처**
-![시스템 아키텍처](./assets/system_architecture.png)
+![시스템 아키텍처](./assests/system_architecture.png)
 
 ## 🔧 설치 및 사용 방법
 ```
