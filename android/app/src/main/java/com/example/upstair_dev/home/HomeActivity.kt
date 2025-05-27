@@ -25,6 +25,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -105,6 +108,7 @@ fun HomeScreen() {
             Spacer(modifier = Modifier.height(16.dp))
 
             // 검색창
+            var searchText by remember { mutableStateOf("") }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -120,7 +124,15 @@ fun HomeScreen() {
                     modifier = Modifier.size(40.dp) // 원하는 사이즈 지정
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("장학금을 검색해보세요...", color = Color.Gray, modifier = Modifier.weight(1f))
+                androidx.compose.material3.TextField(
+                    value = searchText,
+                    onValueChange = { searchText = it },
+                    placeholder = { Text("장학금을 검색해보세요...") },
+                    colors = androidx.compose.material3.TextFieldDefaults.textFieldColors(containerColor = Color.Transparent),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                )
                 Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF1D3A8A))
             }
 
@@ -153,29 +165,91 @@ fun HomeScreen() {
             if (showFilter) {
                 AlertDialog(
                     onDismissRequest = { showFilter = false },
-                    title = { Text("정렬 및 필터") },
+                    title = { Text("필터 설정", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF1D3A8A)) },
                     text = {
+                        var grade by remember { mutableStateOf("") }
+                        var statusExpanded by remember { mutableStateOf(false) }
+                        var yearExpanded by remember { mutableStateOf(false) }
+                        var selectedStatus by remember { mutableStateOf("재학생") }
+                        var selectedYear by remember { mutableStateOf("1학년") }
+
                         Column {
                             OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
-                                label = { Text("학점 (최대 4.5)") }
+                                value = grade,
+                                onValueChange = { grade = it },
+                                label = { Text("학점 (최대 4.5)") },
+                                placeholder = { Text("예: 3.5") },
+                                modifier = Modifier.fillMaxWidth()
                             )
-                            OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
-                                label = { Text("학적 구분") }
-                            )
-                            OutlinedTextField(
-                                value = "",
-                                onValueChange = {},
-                                label = { Text("학년 (1~4)") }
-                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Box {
+                                OutlinedTextField(
+                                    value = selectedStatus,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("학적구분") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    trailingIcon = {
+                                        IconButton(onClick = { statusExpanded = true }) {
+                                            Icon(Icons.Default.ArrowDropDown, contentDescription = "DropDown")
+                                        }
+                                    }
+                                )
+                                DropdownMenu(
+                                    expanded = statusExpanded,
+                                    onDismissRequest = { statusExpanded = false }
+                                ) {
+                                    listOf("재학생", "휴학생", "졸업생").forEach {
+                                        DropdownMenuItem(text = { Text(it) }, onClick = {
+                                            selectedStatus = it
+                                            statusExpanded = false
+                                        })
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Box {
+                                OutlinedTextField(
+                                    value = selectedYear,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("학년") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    trailingIcon = {
+                                        IconButton(onClick = { yearExpanded = true }) {
+                                            Icon(Icons.Default.ArrowDropDown, contentDescription = "DropDown")
+                                        }
+                                    }
+                                )
+                                DropdownMenu(
+                                    expanded = yearExpanded,
+                                    onDismissRequest = { yearExpanded = false }
+                                ) {
+                                    listOf("1학년", "2학년", "3학년", "4학년").forEach {
+                                        DropdownMenuItem(text = { Text(it) }, onClick = {
+                                            selectedYear = it
+                                            yearExpanded = false
+                                        })
+                                    }
+                                }
+                            }
                         }
                     },
                     confirmButton = {
+                        TextButton(onClick = {
+                            showFilter = false
+                            // apply filtering logic here
+                        }) {
+                            Text("적용", color = Color(0xFF1D3A8A))
+                        }
+                    },
+                    dismissButton = {
                         TextButton(onClick = { showFilter = false }) {
-                            Text("확인")
+                            Text("취소")
                         }
                     }
                 )
