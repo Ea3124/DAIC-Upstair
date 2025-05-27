@@ -8,12 +8,15 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -54,6 +57,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,8 +77,13 @@ class HomeActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen() {
+    val viewModel: HomeViewModel = viewModel()
+    val scholarships by viewModel.scholarships
     val context = LocalContext.current
     var showFilter by remember { mutableStateOf(false) }
+    var grade by remember { mutableStateOf("") }
+    var selectedStatus by remember { mutableStateOf("재학") }
+    var selectedYear by remember { mutableStateOf("1") }
 
     Scaffold(
         topBar = {
@@ -88,7 +97,15 @@ fun HomeScreen() {
                         val intent = Intent(context, NotiActivity::class.java)
                         context.startActivity(intent)
                     }) {
-                        BadgedBox(badge = { Badge { Text("3") } }) {
+                        BadgedBox(
+                            badge = {
+                                Badge(
+                                    containerColor = Color(0xFFFFC107), // 노란색
+                                ) {
+                                    Text("2", fontSize = 10.sp, color = Color.Black)
+                                }
+                            }
+                        ) {
                             Icon(
                                 Icons.Default.Notifications,
                                 contentDescription = "Notifications",
@@ -120,34 +137,75 @@ fun HomeScreen() {
 
             // 검색창
             var searchText by remember { mutableStateOf("") }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            // Row 높이 고정은 하지 않고 각 요소 내부 높이 정리
+            Box(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFF2F4F7))
-                    .padding(12.dp)
                     .fillMaxWidth()
+                    .background(Color.White, shape = RoundedCornerShape(12.dp))
+                    .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp) // 텍스트 필드에 충분한 여백 제공
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.robot),
-                    contentDescription = "Chatbot",
-                    modifier = Modifier.size(40.dp) // 원하는 사이즈 지정
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                androidx.compose.material3.TextField(
-                    value = searchText,
-                    onValueChange = { searchText = it },
-                    placeholder = { Text("장학금을 검색해보세요...") },
-                    colors = androidx.compose.material3.TextFieldDefaults.colors(
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedContainerColor = Color.Transparent
-                    ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 8.dp)
-                )
-                Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF1D3A8A))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.robot),
+                        contentDescription = "Chatbot",
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    OutlinedTextField(
+                        value = searchText,
+                        onValueChange = { searchText = it },
+                        placeholder = {
+                            Text(
+                                text = "어떤 장학금을 찾고 계신가요?",
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 8.dp)
+                            .height(56.dp), // 필수: 기본 높이 제약 제거
+                        shape = RoundedCornerShape(18.dp),
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle( // ✅ 텍스트 높이 줄이기
+                            fontSize = 12.sp,
+                            lineHeight = 14.sp
+                        ),
+                        colors = androidx.compose.material3.TextFieldDefaults.outlinedTextFieldColors(
+                            containerColor = Color.White,
+                            unfocusedBorderColor = Color(0xFFE0E0E0),
+                            focusedBorderColor = Color(0xFF1D3A8A),
+                            cursorColor = Color(0xFF1D3A8A)
+                        )
+                    )
+
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp) // Send 버튼 크기
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF1D3A8A))
+                            .clickable {
+                                viewModel.fetchAskedScholarships(searchText)
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_send),
+                            contentDescription = "Send",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -160,18 +218,41 @@ fun HomeScreen() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("추천 장학금", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                IconButton(onClick = { showFilter = true }) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.filter),
-                        contentDescription = "Filter"
-                    )
+                Text(
+                    "추천 장학금",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF1D3A8A) // 남색
+                )
+
+                // 기존 IconButton → Box로 대체
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp)) // 둥근 테두리
+                        .background(Color.White) // 흰색 배경
+                        .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp)) // 회색 테두리
+                        .clickable { showFilter = true }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.filter),
+                            contentDescription = "Filter",
+                            tint = Color.Black,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("필터", color = Color.Black, fontSize = 12.sp)
+                    }
                 }
+
             }
 
             // 장학금 리스트
             LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
-                items(sampleScholarships) { scholarship ->
+                items(scholarships) { scholarship ->
                     ScholarshipCard(scholarship)
                 }
             }
@@ -179,31 +260,41 @@ fun HomeScreen() {
             if (showFilter) {
                 AlertDialog(
                     onDismissRequest = { showFilter = false },
+                    containerColor = Color.White,
                     title = { Text("필터 설정", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF1D3A8A)) },
                     text = {
-                        var grade by remember { mutableStateOf("") }
                         var statusExpanded by remember { mutableStateOf(false) }
                         var yearExpanded by remember { mutableStateOf(false) }
-                        var selectedStatus by remember { mutableStateOf("재학생") }
-                        var selectedYear by remember { mutableStateOf("1학년") }
 
-                        Column {
+                        Column(modifier = Modifier.padding(top = 8.dp)) {
                             OutlinedTextField(
                                 value = grade,
                                 onValueChange = { grade = it },
                                 label = { Text("학점 (최대 4.5)") },
                                 placeholder = { Text("예: 3.5") },
-                                modifier = Modifier.fillMaxWidth()
+                                shape = RoundedCornerShape(12.dp),
+                                colors = androidx.compose.material3.TextFieldDefaults.outlinedTextFieldColors(
+                                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                                    focusedBorderColor = Color(0xFF1D3A8A)
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp)
                             )
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                            Box {
+                            Box(modifier = Modifier.padding(vertical = 6.dp)) {
                                 OutlinedTextField(
                                     value = selectedStatus,
                                     onValueChange = {},
                                     readOnly = true,
                                     label = { Text("학적구분") },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = androidx.compose.material3.TextFieldDefaults.outlinedTextFieldColors(
+                                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                                        focusedBorderColor = Color(0xFF1D3A8A)
+                                    ),
                                     modifier = Modifier.fillMaxWidth(),
                                     trailingIcon = {
                                         IconButton(onClick = { statusExpanded = true }) {
@@ -215,23 +306,32 @@ fun HomeScreen() {
                                     expanded = statusExpanded,
                                     onDismissRequest = { statusExpanded = false }
                                 ) {
-                                    listOf("재학생", "휴학생").forEach {
-                                        DropdownMenuItem(text = { Text(it) }, onClick = {
-                                            selectedStatus = it
-                                            statusExpanded = false
-                                        })
+                                    listOf("재학", "휴학").forEach {
+                                        DropdownMenuItem(
+                                            text = { Text(it, color = Color.Black) }, // 텍스트도 검은색
+                                            onClick = {
+                                                selectedStatus = it
+                                                statusExpanded = false
+                                            },
+                                            modifier = Modifier.background(Color.White) // ✅ 흰색 배경
+                                        )
                                     }
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                            Box {
+                            Box(modifier = Modifier.padding(vertical = 6.dp)) {
                                 OutlinedTextField(
                                     value = selectedYear,
                                     onValueChange = {},
                                     readOnly = true,
                                     label = { Text("학년") },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = androidx.compose.material3.TextFieldDefaults.outlinedTextFieldColors(
+                                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                                        focusedBorderColor = Color(0xFF1D3A8A)
+                                    ),
                                     modifier = Modifier.fillMaxWidth(),
                                     trailingIcon = {
                                         IconButton(onClick = { yearExpanded = true }) {
@@ -243,20 +343,27 @@ fun HomeScreen() {
                                     expanded = yearExpanded,
                                     onDismissRequest = { yearExpanded = false }
                                 ) {
-                                    listOf("1학년", "2학년", "3학년", "4학년").forEach {
-                                        DropdownMenuItem(text = { Text(it) }, onClick = {
-                                            selectedYear = it
-                                            yearExpanded = false
-                                        })
+                                    listOf("1", "2", "3", "4").forEach {
+                                        DropdownMenuItem(
+                                            text = { Text(it, color = Color.Black) },
+                                            onClick = {
+                                                selectedYear = it
+                                                yearExpanded = false
+                                            },
+                                            modifier = Modifier.background(Color.White) // ✅ 흰색 배경
+                                        )
                                     }
                                 }
                             }
                         }
-                    },
+                    }
+                    ,
                     confirmButton = {
                         TextButton(onClick = {
                             showFilter = false
-                            // apply filtering logic here
+                            val gpaDouble = grade.toDoubleOrNull() ?: 0.0
+                            val yearInt = selectedYear.toIntOrNull() ?: 1
+                            viewModel.fetchFilteredScholarships(gpaDouble, yearInt, selectedStatus)
                         }) {
                             Text("적용", color = Color(0xFF1D3A8A))
                         }
@@ -272,22 +379,16 @@ fun HomeScreen() {
     }
 }
 
-data class Scholarship(val name: String, val deadline: String, val status: String)
-
-val sampleScholarships = listOf(
-    Scholarship("국가우수장학금", "2024-03-15", "모집중"),
-    Scholarship("성적우수장학금", "2024-04-01", "모집전"),
-    Scholarship("저소득층지원장학금", "2024-03-20", "모집중"),
-    Scholarship("지역인재장학금", "2024-02-28", "모집완료"),
-    Scholarship("창업지원장학금", "2024-03-25", "모집중")
-)
-
 @Composable
 fun ScholarshipCard(scholarship: Scholarship) {
+
+    val context = LocalContext.current
+
     val statusColor = when (scholarship.status) {
         "모집중" -> Color(0xFFD0F5D8)
         "모집전" -> Color(0xFFFFF2CC)
-        else -> Color(0xFFE0E0E0)
+        "모집완료" -> Color(0xFFE0E0E0)
+        else -> Color.LightGray
     }
 
     Card(
@@ -295,7 +396,13 @@ fun ScholarshipCard(scholarship: Scholarship) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
-            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp)),
+            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
+            .clickable {
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    data = android.net.Uri.parse(scholarship.link)
+                }
+                context.startActivity(intent)
+            },
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -304,19 +411,36 @@ fun ScholarshipCard(scholarship: Scholarship) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(scholarship.name, fontWeight = FontWeight.Bold)
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(statusColor)
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text(scholarship.status, fontSize = 12.sp, color = Color.Black)
+                Text(
+                    text = scholarship.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Color(0xFF1D3A8A),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                if (!scholarship.isFiltered && scholarship.status.isNotBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(statusColor)
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(scholarship.status, fontSize = 12.sp, color = Color.Black)
+                    }
                 }
             }
+            Spacer(modifier = Modifier.height(6.dp)) // 기존보다 조금 더 큰 여백
+            if (!scholarship.isFiltered && scholarship.deadline.isNotBlank()) {
+                Text(
+                    "마감일: ${scholarship.deadline}",
+                    color = Color.Gray,
+                    fontSize = 13.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
             Spacer(modifier = Modifier.height(4.dp))
-            Text("마감일: ${scholarship.deadline}", color = Color.Gray, fontSize = 13.sp)
-            Spacer(modifier = Modifier.height(8.dp))
 
         }
     }
