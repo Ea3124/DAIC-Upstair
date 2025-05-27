@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from db.db import SessionLocal, Document
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date
+from fastapi import HTTPException
+from db.db import SessionLocal, Document
+from sqlalchemy import or_, desc
+
 from fastapi import HTTPException
 from fastapi import Query
 
@@ -184,36 +187,40 @@ def create_sample_documents(db: Session = Depends(get_db)):
     return {"success": True, "created_document_ids": created_docs}
 
 
-@doc_router.get("/documents/filtering")
+@doc_router.get("/documents/filter")
 def filter_documents(
-    min_gpa: Optional[float] = Query(None, description="Minimum GPA (e.g., 3.5)"),
-    status: Optional[str] = Query(None, description="Status (e.g., '재학' or '휴학')"),
-    grade: Optional[int] = Query(None, description="Grade (e.g., 1, 2, 3, 4)"),
+    min_gpa: Optional[float] = None,
+    grade: Optional[int] = None,
+    status: Optional[str] = None,  # "재학" 또는 "휴학"
     db: Session = Depends(get_db)
 ):
     query = db.query(Document)
+    conditions = []
 
+    # 각 조건을 OR로 누적
     if min_gpa is not None:
-        query = query.filter(Document.gpa >= min_gpa)
-    if status is not None:
-        query = query.filter(Document.status == status)
+        conditions.append(Document.gpa >= min_gpa)
     if grade is not None:
-        query = query.filter(Document.grade >= grade)
+        conditions.append(Document.grade == grade)
+    if status is not None:
+        conditions.append(Document.status == status)
+    
+    # 날짜 조건도 OR로 추가
+    conditions.append(Document.start_date <= date.today())
+    conditions.append(Document.end_date >= date.today())
 
-    # 시작일 기준 정렬
-    docs = query.order_by(Document.start_date).all()
+    # OR 조건 적용
+    if conditions:
+        query = query.filter(or_(*conditions))
 
-    return [
-        {
-            "id": doc.id,
-            "title": doc.title,
-            "link": doc.link,
-            # "content": doc.content,
-            "gpa": doc.gpa,
-            "start_date": doc.start_date,
-            "end_date": doc.end_date,
-            "status": doc.status,
-            "grade": doc.grade,
-        }
-        for doc in docs
-    ]
+    # 정렬 조건 추가 (GPA 높은 순, 학년 낮은 순)
+    query = query.order_by(desc(Document.gpa), Document.grade)
+
+    docs = query.all()
+    return [{
+        "title": d.title, 
+        "link": d.link, 
+        "gpa": d.gpa, 
+        "grade": d.grade, 
+        "status": d.status
+    } for d in docs]
