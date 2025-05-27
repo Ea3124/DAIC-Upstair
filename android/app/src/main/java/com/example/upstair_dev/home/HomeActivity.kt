@@ -81,6 +81,9 @@ fun HomeScreen() {
     val scholarships by viewModel.scholarships
     val context = LocalContext.current
     var showFilter by remember { mutableStateOf(false) }
+    var grade by remember { mutableStateOf("") }
+    var selectedStatus by remember { mutableStateOf("재학") }
+    var selectedYear by remember { mutableStateOf("1") }
 
     Scaffold(
         topBar = {
@@ -258,11 +261,8 @@ fun HomeScreen() {
                     containerColor = Color.White,
                     title = { Text("필터 설정", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF1D3A8A)) },
                     text = {
-                        var grade by remember { mutableStateOf("") }
                         var statusExpanded by remember { mutableStateOf(false) }
                         var yearExpanded by remember { mutableStateOf(false) }
-                        var selectedStatus by remember { mutableStateOf("재학") }
-                        var selectedYear by remember { mutableStateOf("1학년") }
 
                         Column(modifier = Modifier.padding(top = 8.dp)) {
                             OutlinedTextField(
@@ -359,7 +359,9 @@ fun HomeScreen() {
                     confirmButton = {
                         TextButton(onClick = {
                             showFilter = false
-                            // apply filtering logic here
+                            val gpaDouble = grade.toDoubleOrNull() ?: 0.0
+                            val yearInt = selectedYear.toIntOrNull() ?: 1
+                            viewModel.fetchFilteredScholarships(gpaDouble, yearInt, selectedStatus)
                         }) {
                             Text("적용", color = Color(0xFF1D3A8A))
                         }
@@ -416,21 +418,26 @@ fun ScholarshipCard(scholarship: Scholarship) {
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(statusColor)
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text(scholarship.status, fontSize = 12.sp, color = Color.Black)
+                if (!scholarship.isFiltered && scholarship.status.isNotBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(statusColor)
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(scholarship.status, fontSize = 12.sp, color = Color.Black)
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(6.dp)) // 기존보다 조금 더 큰 여백
-            Text(
-                "마감일: ${scholarship.deadline}",
-                color = Color.Gray,
-                fontSize = 13.sp
-            )
+            if (!scholarship.isFiltered && scholarship.deadline.isNotBlank()) {
+                Text(
+                    "마감일: ${scholarship.deadline}",
+                    color = Color.Gray,
+                    fontSize = 13.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
             Spacer(modifier = Modifier.height(4.dp))
 
         }

@@ -15,7 +15,13 @@ data class Scholarship(
     val name: String,
     val deadline: String,
     val status: String,
-    val link: String
+    val link: String,
+    val isFiltered: Boolean = false
+)
+
+data class FilteredScholarshipResponse(
+    val notice_title: String?,
+    val url: String?
 )
 
 class HomeViewModel : ViewModel() {
@@ -76,6 +82,36 @@ class HomeViewModel : ViewModel() {
                 Log.e("Scholarship", "API Error", t)
             }
         })
+    }
+
+    fun fetchFilteredScholarships(minGpa: Double, grade: Int, status: String) {
+        RetrofitClient.apiService.getFilteredScholarships(minGpa, grade, status)
+            .enqueue(object : Callback<List<FilteredScholarshipResponse>> {
+                override fun onResponse(
+                    call: Call<List<FilteredScholarshipResponse>>,
+                    response: Response<List<FilteredScholarshipResponse>>
+                ) {
+                    if (response.isSuccessful) {
+                        val body = response.body() ?: emptyList()
+
+                        _scholarships.value = body.map {
+                            Scholarship(
+                                name = it.notice_title ?: "제목 없음",
+                                deadline = "정보 없음", // 해당 API에는 날짜 정보 없음
+                                status = "모집중",     // 서버 응답에는 상태 없음 → 기본값 지정
+                                link = it.url ?: "",     // null 방어
+                                isFiltered = true
+                            )
+                        }
+                    } else {
+                        Log.e("FilterAPI", "응답 실패: ${response.code()}")
+                    }
+                }
+
+                override fun onFailure(call: Call<List<FilteredScholarshipResponse>>, t: Throwable) {
+                    Log.e("FilterAPI", "네트워크 오류", t)
+                }
+            })
     }
 
 }
