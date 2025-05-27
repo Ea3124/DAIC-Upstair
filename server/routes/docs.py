@@ -198,7 +198,7 @@ def filter_documents(
     if status is not None:
         query = query.filter(Document.status == status)
     if grade is not None:
-        query = query.filter(Document.grade == grade)
+        query = query.filter(Document.grade >= grade)
 
     # 시작일 기준 정렬
     docs = query.order_by(Document.start_date).all()
