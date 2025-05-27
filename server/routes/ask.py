@@ -46,7 +46,7 @@ def ask(req: AskRequest, db: Session = Depends(get_db)):
         for res in responses:
             if res["notice_title"] not in unique_titles:
                 unique_titles.add(res["notice_title"])
-                response.append({"notice_title": res["notice_title"], "file_name": res["file_name"], "url": res["url"]})
+                response.append({"notice_title": res["notice_title"], "url": res["url"]})
         return json.dumps(response, ensure_ascii=False)
     else:
         return response

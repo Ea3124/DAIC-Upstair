@@ -235,11 +235,6 @@ def filter_documents(
 
     docs = query.all()
     return [{
-        "title": d.title, 
-        "link": d.link, 
-        "gpa": d.gpa, 
-        "grade": d.grade, 
-        "status": d.status,
-        "start_date": d.start_date,
-        "end_date": d.end_date
+        "notice_title": d.title, 
+        "url": d.link, 
     } for d in docs]
