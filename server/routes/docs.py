@@ -222,5 +222,7 @@ def filter_documents(
         "link": d.link, 
         "gpa": d.gpa, 
         "grade": d.grade, 
-        "status": d.status
+        "status": d.status,
+        "strat_date": d.start_date,
+        "end_date": d.end_date
     } for d in docs]
