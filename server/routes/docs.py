@@ -73,8 +73,8 @@ class DocumentCreate(BaseModel):
     link: str
     content: str
     gpa: Optional[float] = None
-    start_date: Optional[str] = None  # ISO date string
-    end_date: Optional[str] = None
+    start_date: Optional[date] = None  # ISO date string
+    end_date: Optional[date] = None
     status: Optional[str] = None
     grade: Optional[int] = None
 
