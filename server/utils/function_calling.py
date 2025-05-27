@@ -54,7 +54,7 @@ def run_conversation(question: str, *args, **kwargs):
             "content": question,
         }
     ]
-    print(f"messages: {messages}")
+
     tools = [
         {
             "type": "function",

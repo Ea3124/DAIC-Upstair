@@ -186,7 +186,7 @@ def crawl_and_parse(keyword: str = KEYWORD, max_pages: int = MAX_PAGES, max_noti
 
             notice_id = next_notice_id
             parsed_notices[notice_id] = {"title": notice_title, "url": detail_url, "attachments": []}
-            print(parsed_notices)
+
             next_notice_id += 1
 
             try:
@@ -259,13 +259,12 @@ def crawl_and_parse(keyword: str = KEYWORD, max_pages: int = MAX_PAGES, max_noti
                 min_gpa: 2.5, start_date: 2024-03-01, end_date: 2024-08-31, grade: 1, status: 재학
                 Do not include any other text in the response.
                 """
-                print(f"prompt: {prompt}")
                 response = client.chat.completions.create(
                     model="solar-pro2-preview",
                     messages=[{"role": "user", "content": prompt}]
                 )
                 conditions = response.choices[0].message.content
-                print(f"conditions: {conditions}")
+     
                 if conditions:
                     try:
                         import re
@@ -310,7 +309,7 @@ def crawl_and_parse(keyword: str = KEYWORD, max_pages: int = MAX_PAGES, max_noti
                         except:
                             status = None
 
-                        print(f"gpa: {gpa}, start_date: {start_date}, end_date: {end_date}, grade: {grade}, status: {status}")  
+                        
                     except Exception as e:
                         logger.error(f"❌ 조건 파싱 실패: {e}")
                         continue
