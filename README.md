@@ -56,7 +56,8 @@
 git clone https://github.com/Ea3124/DAIC-Upstair.git
 cd DAIC-Upstair/server
 pip install -r requirements.txt
-'''
+\
+bash
 ## 📁 프로젝트 구조
 DAIC-Upstair/
 ├── android/                     # Android 앱 프로젝트
