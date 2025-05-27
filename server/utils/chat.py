@@ -65,6 +65,7 @@ def RAG_chat(question: str, vectorstore: FAISS, top_k: int = 3, messages: Option
         response: 응답(str)
     """
     search_result = vectorstore.similarity_search(question, k=top_k)
+    print(search_result[0].metadata)
     response = chat_with_solar(question, search_result, messages)
     if use_history:
         if messages:
@@ -104,7 +105,19 @@ if __name__ == "__main__":
             "장애 학생을 위한 특별 장학금이 마련되었습니다. 자세한 사항은 학생 지원 센터에 문의하세요.",
             "지역 사회 봉사 활동을 위한 장학금이 있습니다. 신청 마감일은 8월 20일입니다."
         ],
-        embedding=passage_embeddings
+        embedding=passage_embeddings,
+        metadatas=[
+            {"source": "1"},
+            {"source": "2"},
+            {"source": "3"},
+            {"source": "4"},
+            {"source": "5"},
+            {"source": "6"},
+            {"source": "7"},
+            {"source": "8"},
+            {"source": "9"},
+            {"source": "10"},
+        ]
     )
 
     # First turn
