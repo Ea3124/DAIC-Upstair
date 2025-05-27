@@ -114,4 +114,34 @@ class HomeViewModel : ViewModel() {
             })
     }
 
+    fun fetchAskedScholarships(question: String) {
+        val body = mapOf("question" to question)
+
+        RetrofitClient.apiService.askDatabase(body)
+            .enqueue(object : Callback<List<FilteredScholarshipResponse>> {
+                override fun onResponse(
+                    call: Call<List<FilteredScholarshipResponse>>,
+                    response: Response<List<FilteredScholarshipResponse>>
+                ) {
+                    if (response.isSuccessful) {
+                        val list = response.body() ?: emptyList()
+                        _scholarships.value = list.map {
+                            Scholarship(
+                                name = it.notice_title ?: "제목 없음",
+                                deadline = "",   // ❌ 표시 안 함
+                                status = "",     // ❌ 표시 안 함
+                                link = it.url ?: ""
+                            )
+                        }
+                    } else {
+                        Log.e("AskAPI", "응답 실패: ${response.code()}")
+                    }
+                }
+
+                override fun onFailure(call: Call<List<FilteredScholarshipResponse>>, t: Throwable) {
+                    Log.e("AskAPI", "네트워크 오류", t)
+                }
+            })
+    }
+
 }

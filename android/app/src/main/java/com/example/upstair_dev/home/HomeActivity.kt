@@ -193,7 +193,9 @@ fun HomeScreen() {
                             .size(40.dp) // Send 버튼 크기
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color(0xFF1D3A8A))
-                            .clickable { },
+                            .clickable {
+                                viewModel.fetchAskedScholarships(searchText)
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(

@@ -24,5 +24,7 @@ interface ApiService {
         @Query("status") status: String
     ): Call<List<FilteredScholarshipResponse>>
 
+    @POST("/ask/database")
+    fun askDatabase(@Body request: Map<String, String>): Call<List<FilteredScholarshipResponse>>
 
 }
