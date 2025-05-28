@@ -111,7 +111,9 @@ DAIC-Upstair/
 │   ├── requirements.txt         # Python 패키지 의존성
 │   └── simple_fastapi_auth.py   # 간단한 FastAPI 인증 모듈
 ├── .gitignore
-└── README.md                    # 전체 프로젝트 설명서
+│
+├── README.md                    # 전체 프로젝트 설명서
+└── SearCh.apk.zip               # 안드로이드 apk
 
 ```
 
