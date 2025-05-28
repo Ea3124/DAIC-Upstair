@@ -1,60 +1,80 @@
-# [장학금 매칭 시스템]
+# Upstage Document AI Challenge - SearCh
 
 ## 📌 개요
-부산대학교 컴퓨터공학과 홈페이지에서 장학금 관련 공지사항의 첨부파일을 자동으로 수집 및 분석하여, 조건별 장학금 정보를 제공하고 자연어 질의응답 기능까지 제공하는 **AI 기반 학사 정보 처리 시스템**이다.
+> 부산대학교 장학금 공지의 첨부파일(PDF·HWP 등)을 **AI로 자동 분석**하여  
+> _“내 성적·학년·질문_” 에 맞는 장학금을 바로 추천해 주는 검색 서비스입니다.
+
+## ✨ 핵심 기능
+| 구분 | 설명 |
+|------|------|
+| 📄 **공지 수집** | 크롤러가 “장학” 키워드 포함 공지 + 첨부파일 자동 수집 |
+| 🧠 **AI Parsing** | Upstage Document-Parsing으로 첨부파일 → 텍스트/HTML 변환 |
+| 🔎 **리스트·필터** | GPA·학년·재학 상태 조건 필터 & 리스트 뷰 |
+| 🤖 **자연어 검색** | “3학년인데 GPA 3.8, 받을 장학금?” → LLM + RAG 결과 |
+| 📑 **조건 추출** | 첨부파일에서 **신청 자격·기한·최저 GPA 등** 자동 추출 |
+| 🗄 **증분 인덱싱** | SHA-256 중복 제거 + FAISS 인덱스 증분 업데이트 |
+
+
 
 ## 🎯 문제 정의 및 기대 효과
-- 기존 학사 공지사항은 단순히 게시판 형태로 제공되어, 수많은 공지 중 필요한 정보를 찾는 데 많은 시간이 소요된다. 
-- 이 프로젝트는 공지사항 첨부파일을 자동 파싱 및 인덱싱하고, 학점/지역 조건 및 자연어 질의로 빠르게 정보를 찾을 수 있도록 설계되었다.  
-  
-🌟 사용자에게 다음과 같은 서비스를 제공한다:
- - 신속한 장학금 정보 탐색
- - 키워드 기반 매칭 및 검색 결과 제공
- - RAG 기반 대화형 챗봇을 통한 학사 정보 제공
+- 기존의 장학금 공지사항은 단순 게시판 형태로 제공되어, 학생들이 자신의 조건에 맞는 장학금을 찾기 위해 하나하나 공지를 열어보거나 첨부파일을 직접 확인해야 하는 번거로움이 있었습니다.
+- 이 앱을 통해, 학생들이 보다 편리하게 장학금 정보를 탐색할 수 있고, 이전이라면 놓쳤을 수도 있는 장학금 기회를 휴대폰으로 더욱 쉽게 확인하고 신청할 수 있도록 돕습니다.
 
 ## ✅ Upstage API 활용
-- **Upstage Document-Digitization**: 공지사항 첨부파일의 내용(텍스트 및 HTML) 자동 변환
+- **Upstage Document-Parsing**: 장학금 링크 내 첨부파일의 내용(텍스트 및 HTML)을 자동 변환하여, 텍스트로 인식 후 반환.
 - **Upstage Embeddings**: FAISS 인덱스 구축 및 유사도 기반 검색을 위한 벡터 임베딩 생성
-- **Upstage Chat Model (SOLAR)**: 자연어 질문에 대해 검색 결과 및 대화 이력을 바탕으로 답변 생성
+- **Upstage Chat Model (solor-pro2-preview)**: Parsing된 첨부파일에서, 장학금 조건 추출을 위해 모델 사용
+- **Function calling (solar-pro)**: 사용자의 자연어 질문을 해석해 조건에 맞는 장학금 정보를 필터링하고, 그 결과를 리스트 형태로 제공하기 위해 사용.
 
-## 🚀 주요 기능
-- ✨ **공지사항 첨부파일 자동 수집 및 분석**
-  - SHA-256 해시를 활용해 중복 처리
-  - Upstage Document-Digitization을 이용한 텍스트 추출 및 파싱
-  - 장학금 조건 키워드 매칭 및 메타데이터 생성
+## 🔧 빠른 시작
+```bash
+# 1) 저장소 클론
+git clone https://github.com/Ea3124/DAIC-Upstair.git
+cd DAIC-Upstair
+
+# 2) 서버 세팅
+cd server
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env        # UPSTAGE_API_KEY 등 입력
+uvicorn uvicorn main:app --host 127.0.0.1 --port 8000
+
+# 3) 안드로이드 앱
+# Android Studio로 android/ 폴더 열고 실행 (Flamingo 이상 권장)
+```
+
+## 🚀 주요 기술
+- ✨ **Web crawling과 Document Pasring을 통한 공지사항 첨부파일 자동 수집 및 분석**
+  - 웹 크롤링을 통해, 공지사항중 장학 키워드만 골라서 링크 및 첨부파일 반환
+  - 이때 Upstage Document Parsing을 이용한 텍스트 추출 및 파싱
+  - 최신화를 위해 다시 긁어오는 경우 중복 수집 방지를 위해, 각 공지사항당 SHA-256 해시를 걸어 똑같은 정보 수집시 중복으로 판단 후 다음 파일로 이동
 - ✨ **FAISS 벡터 인덱스 구축 및 업데이트**
-  - RecursiveCharacterTextSplitter로 텍스트 청크화
-  - Upstage Embeddings를 통한 벡터 생성 및 유사도 검색
-- ✨ **FastAPI 기반 REST API**
+  - Embedding Model을 사용하여, parsing한 텍스트들을 FAISS DB구축
+  - 메타데이터 생성을 통한 유사도 검색시 어떤 장학금인지 마킹
+  - Chat Model을 사용한 장학금 조건 키워드 매칭 후, RDB의 document table에 조건이 포함된 document 객체 추가
+- ✨ **FastAPI 기반 Android Studio와 연동**
   - 공지사항 목록 및 첨부파일 정보 제공
-  - 최신 공지사항 수집
-- ✨ **RAG 기반 자연어 질의응답 (Chatbot)**
-  - Upstage SOLAR API를 이용해 검색 결과 및 대화 이력을 바탕으로 응답 생성
-  - GPA 및 지역 조건에 따라 내부 함수를 호출해 데이터 제공
+  - 최신 공지사항 수집 후 안드로이드로 api 송신
+- ✨ **Function Calling 기반 자연어 검색 (NL Search)**
+  - RAG와, Function Calling을 사용해 자연어 검색과, 그에 알맞은 함수를 선택하여 불러옴으로써, 알맞게 필터링된 장학금 리스트뷰를 제공한다
+  - 정량적일 경우, GPA 및 지역 조건에 따라 내부 쿼리함수를 호출해 RDB 데이터 제공
 
 ## 🖼️ 데모
 [📹 데모 영상 보기 (구글 드라이브)](https://drive.google.com/file/d/1sRtQgRri9KGeOxp2CgRxvq2-dnmkPOwL/view?usp=sharing)
 
-## 🔬 기술 구현 요약
-- LangChain 기반 벡터 검색 및 파이프라인 처리
-- Upstage Document Parsing 및 Embeddings 모델 활용
-- Upstage SOLAR 모델(Function Calling 포함) 기반 자연어 응답 생성
-- FAISS 인덱스 로컬 영속화 및 증분 업데이트
-- BeautifulSoup 및 Requests 기반 웹 크롤러 구현
-- FastAPI로 RESTful API 제공
+## 🛠️ 주요 기술 스택 및 아키텍처
+| Layer | Tech |
+|-------|------|
+| Backend | Python 3.11 · FastAPI · LangChain · FAISS · SQLAlchemy |
+| AI | Upstage Document-Digitization · Solar Embedding · Solar-pro* |
+| Crawler | Requests · BeautifulSoup |
+| Mobile | Android (Kotlin + Jetpack Compose · Retrofit) |
+| DevOps | GitHub Actions (lint/test) |
 
-## 🧰 기술 스택 및 시스템 아키텍처
-- **언어 및 프레임워크**: Python 3.10, FastAPI, LangChain, FAISS, BeautifulSoup
-- **AI 모델**: Upstage Document-Digitization, Upstage Embeddings (solar-embedding-1-large), Upstage Chat Model (SOLAR)
-- **시스템 아키텍처**
+\* _solar-pro2-preview(Extraction) / solar-pro(Function Calling)_
+
+**시스템 아키텍처**
 ![시스템 아키텍처](./assests/system_architecture.png)
-
-## 🔧 설치 및 사용 방법
-```
-git clone https://github.com/Ea3124/DAIC-Upstair.git
-cd DAIC-Upstair/server
-pip install -r requirements.txt
-```
 
 ## 📁 프로젝트 구조
 ```
@@ -82,16 +102,17 @@ DAIC-Upstair/
 │   └── simple_fastapi_auth.py   # 간단한 FastAPI 인증 모듈
 ├── .gitignore
 └── README.md                    # 전체 프로젝트 설명서
+
 ```
 
 ## 🧑‍🤝‍🧑 팀원 소개
 ```
-| 이름   | 역할             | GitHub                                    |
+| 이름   | 역할            | GitHub                                    |
 | 이승재 | 팀장 / 백엔드 개발 | [@Ea3124](https://github.com/Ea3124)      |
 | 박준혁 | 백엔드 개발       | [@JakeFRCSE](https://github.com/JakeFRCSE)|
 | 김정희 | 안드로이드 개발    | [@lovelhee](https://github.com/lovelhee)  |
 | 이병찬 | 안드로이드 개발    | [@mark77234](https://github.com/mark77234)|
-| 금비   |  인공지능 모델    | [@Bee-Geum](https://github.com/Bee-Geum)  |
+| 금비   | 인공지능 모델     | [@Bee-Geum](https://github.com/Bee-Geum)  |
 ```
 
 ## 💡 참고 자료 및 아이디어 출처
