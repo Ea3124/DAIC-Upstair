@@ -106,14 +106,15 @@ DAIC-Upstair/
 ```
 
 ## 🧑‍🤝‍🧑 팀원 소개
-```
-| 이름   | 역할            | GitHub                                    |
-| 이승재 | 팀장 / 백엔드 개발 | [@Ea3124](https://github.com/Ea3124)      |
-| 박준혁 | 백엔드 개발       | [@JakeFRCSE](https://github.com/JakeFRCSE)|
-| 김정희 | 안드로이드 개발    | [@lovelhee](https://github.com/lovelhee)  |
-| 이병찬 | 안드로이드 개발    | [@mark77234](https://github.com/mark77234)|
-| 금비   | 인공지능 모델     | [@Bee-Geum](https://github.com/Bee-Geum)  |
-```
+ | <img src="https://github.com/Ea3124.png" width="100"> | <img src="https://github.com/JakeFRCSE.png" width="100"> | <img src="https://github.com/lovelhee.png" width="100"> |
+|:---:|:---:|:---:|
+| [이승재](https://github.com/Ea3124) <br> 팀장 / 백엔드 개발 <br> leesj6717@gmail.com | [박준혁](https://github.com/JakeFRCSE) <br> 백엔드 개발 <br> eppi001004@gmail.com | [김정희](https://github.com/lovelhee) <br> 안드로이드 개발 <br> jenny8530@naver.com |
+| <img src="https://github.com/mark77234.png" width="100"> | <img src="https://github.com/Bee-Geum.png" width="100"> |
+|:---:|:---:|
+| [이병찬](https://github.com/mark77234) <br> 안드로이드 개발 <br> mark77234@naver.com | [금비](https://github.com/Bee-Geum) <br> 인공지능 모델 <br> cusoonbee@gmail.com |
+
+
+
 
 ## 💡 참고 자료 및 아이디어 출처
 - *Upstage Document Parse
