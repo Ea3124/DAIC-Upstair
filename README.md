@@ -33,9 +33,7 @@
   - GPA 및 지역 조건에 따라 내부 함수를 호출해 데이터 제공
 
 ## 🖼️ 데모
-> 추후 구글 드라이브 링크 또는 GIF/이미지 추가 예정  
-예시:  
-![데모 스크린샷](./assets/demo.png)
+[📹 데모 영상 보기 (구글 드라이브)](https://drive.google.com/file/d/1sRtQgRri9KGeOxp2CgRxvq2-dnmkPOwL/view?usp=sharing)
 
 ## 🔬 기술 구현 요약
 - LangChain 기반 벡터 검색 및 파이프라인 처리
