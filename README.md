@@ -110,7 +110,7 @@ DAIC-Upstair/
 |:---:|:---:|:---:|
 | [이승재](https://github.com/Ea3124) <br> 팀장 / 백엔드 개발 <br> leesj6717@gmail.com | [박준혁](https://github.com/JakeFRCSE) <br> 백엔드 개발 <br> eppi001004@gmail.com | [김정희](https://github.com/lovelhee) <br> 안드로이드 개발 <br> jenny8530@naver.com |
 | <img src="https://github.com/mark77234.png" width="100"> | <img src="https://github.com/Bee-Geum.png" width="100"> |
-|:---:|:---:|
+|
 | [이병찬](https://github.com/mark77234) <br> 안드로이드 개발 <br> mark77234@naver.com | [금비](https://github.com/Bee-Geum) <br> 인공지능 모델 <br> cusoonbee@gmail.com |
 
 
